@@ -470,6 +470,26 @@
           }
         }
       }
+    },
+    "progress.finishing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almost done..."
+          }
+        }
+      }
+    },
+    "progress.remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "remaining"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

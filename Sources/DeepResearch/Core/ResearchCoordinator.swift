@@ -156,18 +156,23 @@ final class ResearchCoordinator {
         let sessions = fetchPendingSessions()
         for session in sessions {
             guard let interactionID = session.interactionID else { continue }
-            guard let interaction = try? await client.get(id: interactionID) else { continue }
 
-            session.interactionID = interaction.id
-            mergeSteps(from: interaction, into: session)
+            // Se o GET falhar (rede, API indisponível), inicia monitoramento
+            // mesmo assim — o polling vai retryar e detectar quando a API voltar.
+            if let interaction = try? await client.get(id: interactionID) {
+                session.interactionID = interaction.id
+                mergeSteps(from: interaction, into: session)
 
-            if isTerminal(interaction.status) {
-                applyTerminalStatus(interaction.status, to: session)
-            } else {
-                session.status = .running
-                session.phase = derivePhase(steps: interaction.steps)
-                startMonitoring(session: session)
+                if isTerminal(interaction.status) {
+                    applyTerminalStatus(interaction.status, to: session)
+                    try? modelContext.save()
+                    continue
+                }
             }
+
+            // API indisponível ou interação ainda em andamento → monitora.
+            session.status = .running
+            startMonitoring(session: session)
             try? modelContext.save()
         }
     }
