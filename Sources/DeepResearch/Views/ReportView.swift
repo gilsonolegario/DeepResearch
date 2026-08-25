@@ -10,26 +10,14 @@ struct ReportView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Renderiza cada parágrafo do markdown
-                ForEach(Array(reportBlocks.enumerated()), id: \.offset) { index, block in
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(Array(reportBlocks.enumerated()), id: \.offset) { _, block in
                     switch block {
                     case .text(let markdown):
-                        let processed = markdown
-                            .replacingOccurrences(of: #"- \[ \] "#, with: "☐ ", options: .regularExpression)
-                            .replacingOccurrences(of: #"- \[x\] "#, with: "☑ ", options: .regularExpression)
-                        if let attributed = try? AttributedString(markdown: processed, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
-                            Text(attributed)
-                                .font(.system(size: fontSize))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 2)
-                        } else {
-                            Text(processed)
-                                .font(.system(size: fontSize))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                        Text(markdown)
+                            .font(.system(size: fontSize))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                     case .code(let code, _):
                         Text(code)
@@ -42,7 +30,7 @@ struct ReportView: View {
                 }
             }
             .padding()
-            .padding(.bottom, 60) // Space for bottom bar
+            .padding(.bottom, 60)
         }
         .navigationTitle(session.question)
         .overlay(alignment: .bottom) {

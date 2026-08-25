@@ -79,7 +79,7 @@ struct NewResearchView: View {
     }
 
     @ViewBuilder private var appIcon: some View {
-        if let url = Bundle.module.url(forResource: "AppIconInternal-transparent", withExtension: "png"),
+        if let url = Bundle.module.url(forResource: "AppIconInternal", withExtension: "png"),
            let nsImage = NSImage(contentsOf: url) {
             Image(nsImage: nsImage)
                 .resizable()
