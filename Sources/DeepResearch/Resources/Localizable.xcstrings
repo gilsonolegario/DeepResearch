@@ -420,6 +420,56 @@
           }
         }
       }
+    },
+    "loading.pleaseWait": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This may take a few minutes"
+          }
+        }
+      }
+    },
+    "loading.planning": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planning research..."
+          }
+        }
+      }
+    },
+    "loading.researching": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Researching..."
+          }
+        }
+      }
+    },
+    "loading.synthesizing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synthesizing findings..."
+          }
+        }
+      }
+    },
+    "loading.starting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting research..."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

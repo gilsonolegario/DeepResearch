@@ -9,6 +9,7 @@ struct LiveLogView: View {
     /// Ticker a cada segundo para atualizar a barra de progresso.
     @State private var now = Date()
     @State private var showReport = false
+    @State private var pulse = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,20 +23,27 @@ struct LiveLogView: View {
                 PhaseTrailView(currentPhase: session.phase)
             }
 
-            // Lista de etapas
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 6) {
-                        ForEach(Array(session.stepLog.enumerated()), id: \.offset) { index, entry in
-                            StepRow(entry: entry)
-                                .id(index)
+            // Loading animation centralizada (quando poucos steps)
+            if session.status == .running && session.stepLog.count < 3 {
+                Spacer()
+                loadingAnimation
+                Spacer()
+            } else {
+                // Lista de etapas
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 6) {
+                            ForEach(Array(session.stepLog.enumerated()), id: \.offset) { index, entry in
+                                StepRow(entry: entry)
+                                    .id(index)
+                            }
                         }
+                        .padding()
                     }
-                    .padding()
-                }
-                .onChange(of: session.stepLog.count) { _, newCount in
-                    guard newCount > 0 else { return }
-                    withAnimation { proxy.scrollTo(newCount - 1, anchor: .bottom) }
+                    .onChange(of: session.stepLog.count) { _, newCount in
+                        guard newCount > 0 else { return }
+                        withAnimation { proxy.scrollTo(newCount - 1, anchor: .bottom) }
+                    }
                 }
             }
 
@@ -89,6 +97,69 @@ struct LiveLogView: View {
             String(localized: "liveLog.status.failed", bundle: .module)
         case .queued, .interrupted:
             String(localized: "liveLog.status.queued", bundle: .module)
+        }
+    }
+
+    // MARK: - Loading Animation
+
+    private var loadingAnimation: some View {
+        VStack(spacing: 20) {
+            // Anel de progresso pulsante
+            ZStack {
+                Circle()
+                    .stroke(.quaternary, lineWidth: 4)
+                    .frame(width: 80, height: 80)
+
+                Circle()
+                    .trim(from: 0, to: 0.7)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.blue, .purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .frame(width: 80, height: 80)
+                    .rotationEffect(.degrees(pulse ? 360 : 0))
+                    .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: pulse)
+
+                Image(systemName: phaseIcon)
+                    .font(.title2)
+                    .foregroundStyle(.blue)
+                    .scaleEffect(pulse ? 1.1 : 0.9)
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulse)
+            }
+
+            VStack(spacing: 6) {
+                Text(phaseText)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                Text(String(localized: "loading.pleaseWait", bundle: .module))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { pulse = true }
+    }
+
+    private var phaseIcon: String {
+        switch session.phase {
+        case .planning: "brain"
+        case .researching: "magnifyingglass"
+        case .synthesizing: "text.magnifyingglass"
+        case .none: "sparkle"
+        }
+    }
+
+    private var phaseText: String {
+        switch session.phase {
+        case .planning: String(localized: "loading.planning", bundle: .module)
+        case .researching: String(localized: "loading.researching", bundle: .module)
+        case .synthesizing: String(localized: "loading.synthesizing", bundle: .module)
+        case .none: String(localized: "loading.starting", bundle: .module)
         }
     }
 
