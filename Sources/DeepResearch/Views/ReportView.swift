@@ -128,6 +128,17 @@ struct ReportView: View {
         }
     }
 
+    /// Comprimento do prefixo "N. " (lista numerada) ou nil se não for.
+    /// Aceita multi-dígito (10., 42.) — a checagem antiga só olhava o índice 1
+    /// e tratava itens 10+ como parágrafo comum.
+    private func numberedListPrefixLength(_ s: String) -> Int? {
+        let digits = s.prefix(while: { $0.isNumber }).count
+        guard digits >= 1, digits <= 3, s.count > digits + 1 else { return nil }
+        let dotIndex = s.index(s.startIndex, offsetBy: digits)
+        let spaceIndex = s.index(after: dotIndex)
+        return s[dotIndex] == "." && s[spaceIndex] == " " ? digits + 2 : nil
+    }
+
     /// Parse do markdown em blocos tipados — chamado UMA vez por relatório.
     private func parseBlocks(_ content: String) -> [ReportBlock] {
         guard !content.isEmpty else { return [] }
@@ -166,20 +177,16 @@ struct ReportView: View {
                 }
             }
 
-            // List item: - ...  * ...  1. ...
-            if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") ||
-               (trimmed.count > 2 && trimmed.first?.isNumber == true && trimmed[trimmed.index(trimmed.startIndex, offsetBy: 1)] == ".") {
-                let text: String
-                if trimmed.hasPrefix("- ") {
-                    text = String(trimmed.dropFirst(2))
-                } else if trimmed.hasPrefix("* ") {
-                    text = String(trimmed.dropFirst(2))
-                } else {
-                    // "1. text" — drop "N. "
-                    let dotIdx = trimmed.firstIndex(of: ".")!
-                    text = String(trimmed[trimmed.index(after: dotIdx)...]).trimmingCharacters(in: .whitespaces)
-                }
-                result.append(.listItem(text))
+            // List item numerado: "N. texto" (aceita multi-dígito: 10., 42., …)
+            if let prefixLen = numberedListPrefixLength(trimmed) {
+                result.append(.listItem(String(trimmed.dropFirst(prefixLen))))
+                i += 1
+                continue
+            }
+
+            // List item com marcador: - ou *
+            if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") {
+                result.append(.listItem(String(trimmed.dropFirst(2))))
                 i += 1
                 continue
             }
@@ -231,7 +238,7 @@ struct ReportView: View {
                 let l = lines[i].trimmingCharacters(in: .whitespaces)
                 if l.isEmpty || l.hasPrefix("#") || l.hasPrefix("```") ||
                    l.hasPrefix("- ") || l.hasPrefix("* ") || l.hasPrefix("> ") || (l.hasPrefix("|") && l.hasSuffix("|")) ||
-                   (l.count > 2 && l.first?.isNumber == true && l[l.index(l.startIndex, offsetBy: 1)] == ".") { break }
+                   numberedListPrefixLength(l) != nil { break }
                 textLines.append(lines[i])
                 i += 1
             }
