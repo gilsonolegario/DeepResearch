@@ -64,7 +64,7 @@ struct LiveLogView: View {
                 ReportView(session: session)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showReport = false }
+                            PillButton(systemImage: "checkmark") { showReport = false }
                         }
                     }
             }
