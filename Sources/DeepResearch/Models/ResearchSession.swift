@@ -17,6 +17,15 @@ enum Status: String, Codable {
     case failed
     /// Estava em aberto quando o app fechou; re-adotada no próximo launch.
     case interrupted
+
+    /// Fim de linha para a UI: sai de "Ativas" e entra no "Histórico".
+    /// `interrupted` NÃO é terminal — aguarda a re-adoção decidir o destino.
+    var isTerminal: Bool {
+        switch self {
+        case .completed, .cancelled, .failed: true
+        case .queued, .running, .interrupted: false
+        }
+    }
 }
 
 /// Fase derivada por heurística dos tipos de step — rótulo do app, não vem da API.

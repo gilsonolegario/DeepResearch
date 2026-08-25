@@ -1,0 +1,146 @@
+{
+  "sourceLanguage" : "pt-BR",
+  "version" : "1.0",
+  "strings" : {
+    "app.name" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "DeepResearch" } }
+      }
+    },
+    "banner.cancelled.message" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa cancelada. Todo o progresso até aqui foi preservado." } }
+      }
+    },
+    "banner.cancelled.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Cancelada" } }
+      }
+    },
+    "banner.failed.message" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Algo falhou durante a pesquisa. O que foi coletado continua aqui." } }
+      }
+    },
+    "banner.failed.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Falhou" } }
+      }
+    },
+    "banner.interrupted.message" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Interrompida quando o app fechou. O acompanhamento será retomado automaticamente." } }
+      }
+    },
+    "banner.interrupted.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Interrompida" } }
+      }
+    },
+    "banner.newResearch" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nova pesquisa" } }
+      }
+    },
+    "banner.retry" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Tentar novamente" } }
+      }
+    },
+    "liveLog.status.cancelled" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Cancelada" } }
+      }
+    },
+    "liveLog.status.completed" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluída" } }
+      }
+    },
+    "liveLog.status.failed" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Falhou" } }
+      }
+    },
+    "liveLog.status.queued" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Na fila" } }
+      }
+    },
+    "liveLog.status.running" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Em andamento" } }
+      }
+    },
+    "newResearch.agentMax" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo Max (mais completo)" } }
+      }
+    },
+    "newResearch.placeholder" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Sobre o que você quer pesquisar a fundo?" } }
+      }
+    },
+    "newResearch.start" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisar" } }
+      }
+    },
+    "newResearch.subtitle" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Uma pergunta, uma investigação completa com fontes." } }
+      }
+    },
+    "newResearch.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O que vamos descobrir?" } }
+      }
+    },
+    "phase.planning" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Planejando" } }
+      }
+    },
+    "phase.researching" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisando" } }
+      }
+    },
+    "phase.synthesizing" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Escrevendo" } }
+      }
+    },
+    "sidebar.newResearch" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nova pesquisa" } }
+      }
+    },
+    "sidebar.search.placeholder" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Buscar no histórico" } }
+      }
+    },
+    "sidebar.section.active" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ativas" } }
+      }
+    },
+    "sidebar.section.history" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Histórico" } }
+      }
+    },
+    "sidebar.selectSession" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nenhuma pesquisa selecionada" } }
+      }
+    },
+    "sidebar.selectSession.description" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Escolha um item na barra lateral ou comece uma nova pesquisa." } }
+      }
+    }
+  }
+}
