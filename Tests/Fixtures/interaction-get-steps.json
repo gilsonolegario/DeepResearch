@@ -1,0 +1,35 @@
+{
+  "agent": "deep-research-preview-04-2026",
+  "created": "2026-08-25T10:00:00Z",
+  "id": "v1_abc123def456",
+  "status": "completed",
+  "steps": [
+    {
+      "type": "model_output",
+      "content": [{ "type": "text", "text": "Pesquisando o tema solicitado..." }]
+    },
+    {
+      "type": "thought",
+      "summary": [{ "type": "text", "text": "planejando as buscas" }]
+    },
+    {
+      "type": "function_call",
+      "name": "google_search",
+      "id": "call_01",
+      "arguments": "{\"query\": \"capital do Brasil\"}"
+    },
+    {
+      "type": "function_result",
+      "call_id": "call_01",
+      "result": [{ "type": "text", "text": "Brasília é a capital." }],
+      "is_error": false
+    },
+    { "type": "google_search" },
+    { "type": "google_search_result" },
+    {
+      "type": "user_input",
+      "content": [{ "type": "text", "text": "qual a capital do Brasil?" }]
+    }
+  ],
+  "updated": "2026-08-25T10:05:00Z"
+}
