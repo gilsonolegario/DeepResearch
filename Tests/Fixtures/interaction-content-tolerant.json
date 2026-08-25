@@ -1,0 +1,17 @@
+{
+  "id": "v1_tolerant_test",
+  "status": "completed",
+  "steps": [
+    {
+      "type": "model_output",
+      "content": [
+        { "type": "text", "text": "Primeiro parágrafo do relatório." },
+        { "type": "audio", "data": "AAAA", "mime_type": "audio/mp3" },
+        { "type": "text", "text": "Segundo parágrafo do relatório." },
+        { "type": "video", "data": "BBBB", "mime_type": "video/mp4" },
+        { "type": "document", "uri": "https://example.com/doc.pdf", "mime_type": "application/pdf" },
+        { "type": "text", "text": "Terceiro parágrafo do relatório." }
+      ]
+    }
+  ]
+}

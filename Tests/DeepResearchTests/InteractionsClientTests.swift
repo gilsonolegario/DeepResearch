@@ -73,6 +73,7 @@ final class URLProtocolStub: URLProtocol {
 }
 
 /// Testes do client HTTP contra stubs de URLProtocol.
+@MainActor
 final class InteractionsClientTests: XCTestCase {
     private var client: URLSessionInteractionsClient!
 

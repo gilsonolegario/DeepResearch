@@ -17,6 +17,7 @@ enum ClientError: Error, Equatable {
     case transport(String)
 }
 
+@MainActor
 protocol InteractionsClientProtocol {
     func create(question: String, agent: AgentKind) async throws -> Interaction
     func get(id: String) async throws -> Interaction

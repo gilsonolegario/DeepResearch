@@ -31,7 +31,7 @@ enum TestFixtures {
 
 final class TestFixtureAvailabilityTests: XCTestCase {
     func testFixturesExistentesSaoCarregaveis() throws {
-        for name in ["interaction-get-steps", "error-quota", "error-invalid-key"] {
+        for name in ["interaction-get-steps", "error-quota", "error-invalid-key", "interaction-content-tolerant"] {
             XCTAssertNoThrow(try TestFixtures.load(name), "fixture ausente: \(name)")
         }
     }

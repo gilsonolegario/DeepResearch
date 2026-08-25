@@ -115,9 +115,9 @@ extension Step: Decodable {
 
         switch type {
         case "model_output":
-            self = .modelOutput((try? container.decode([Content].self, forKey: .content)) ?? [])
+            self = .modelOutput(Content.decodeArrayTolerant(from: decoder, key: "content"))
         case "thought":
-            self = .thought(summary: (try? container.decode([Content].self, forKey: .summary)) ?? [])
+            self = .thought(summary: Content.decodeArrayTolerant(from: decoder, key: "summary"))
         case "function_call":
             self = .functionCall(
                 name: (try? container.decode(String.self, forKey: .name)) ?? "",
@@ -127,7 +127,7 @@ extension Step: Decodable {
         case "function_result":
             self = .functionResult(
                 callID: try? container.decode(String.self, forKey: .callID),
-                result: (try? container.decode([Content].self, forKey: .result)) ?? [],
+                result: Content.decodeArrayTolerant(from: decoder, key: "result"),
                 isError: (try? container.decode(Bool.self, forKey: .isError)) ?? false
             )
         case "google_search":
@@ -135,7 +135,7 @@ extension Step: Decodable {
         case "google_search_result":
             self = .googleSearchResult
         case "user_input":
-            self = .userInput((try? container.decode([Content].self, forKey: .content)) ?? [])
+            self = .userInput(Content.decodeArrayTolerant(from: decoder, key: "content"))
         default:
             // Contrato lista ~14 tipos de step; mapear todos seria overengineering —
             // tipos novos/não consumidos caem aqui sem quebrar o resto do payload.
@@ -145,12 +145,12 @@ extension Step: Decodable {
 }
 
 extension Content: Decodable {
-    private enum ContentCodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case type, text, data, mimeType = "mime_type"
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
         switch try container.decode(String.self, forKey: .type) {
         case "text":
             self = .text(try container.decode(String.self, forKey: .text))
@@ -164,6 +164,66 @@ extension Content: Decodable {
                 forKey: .type, in: container,
                 debugDescription: "tipo de content não suportado"
             )
+        }
+    }
+
+    /// Decodifica um array de Content tolerando tipos desconhecidos (audio, video,
+    /// document etc.) — elementos não suportados são pulados em vez de zerar o array
+    /// inteiro.
+    static func decodeArrayTolerant(from decoder: Decoder, key: String) -> [Content] {
+        // Abordagem pragmática: extrair a array como [[String: Any]] via JSONSerialization,
+        // depois decodificar cada elemento isoladamente — se um falhar, pula sem afetar os
+        // demais. O roundtrip dict→Data é o custo de não ter acesso aos bytes brutos no
+        // UnkeyedDecodingContainer do JSONDecoder.
+        guard let topLevel = try? decoder.container(keyedBy: _GenericKey.self),
+              let rawArray = try? topLevel.decode(RawJSON.self, forKey: _GenericKey(stringValue: key)!).elements
+        else { return [] }
+
+        return rawArray.compactMap { dict -> Content? in
+            guard let data = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
+            return try? JSONDecoder().decode(Content.self, from: data)
+        }
+    }
+
+    // MARK: - Suporte ao decode tolerante
+
+    private struct _GenericKey: CodingKey {
+        let stringValue: String
+        let intValue: Int?
+        init?(stringValue: String) { self.stringValue = stringValue; self.intValue = nil }
+        init?(intValue: Int) { self.stringValue = "\(intValue)"; self.intValue = intValue }
+    }
+
+    /// Wrapper que captura um JSON array bruto sem tentar tipar seus elementos.
+    private struct RawJSON: Decodable {
+        let elements: [[String: Any]]
+        init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            var result: [[String: Any]] = []
+            while !container.isAtEnd {
+                if let dict = try? container.decode([String: AnyCodable].self) {
+                    result.append(dict.mapValues(\.value))
+                } else {
+                    _ = try? container.decode(Empty.self)
+                }
+            }
+            elements = result
+        }
+        private struct Empty: Decodable {}
+    }
+
+    /// Tipo-erased wrapper que aceita qualquer valor JSON.
+    private struct AnyCodable: Decodable {
+        let value: Any
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            if let v = try? container.decode(Bool.self) { value = v }
+            else if let v = try? container.decode(Int.self) { value = v }
+            else if let v = try? container.decode(Double.self) { value = v }
+            else if let v = try? container.decode(String.self) { value = v }
+            else if let v = try? container.decode([AnyCodable].self) { value = v.map(\.value) }
+            else if let v = try? container.decode([String: AnyCodable].self) { value = v.mapValues(\.value) }
+            else { value = NSNull() }
         }
     }
 }
