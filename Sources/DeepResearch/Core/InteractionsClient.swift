@@ -22,6 +22,19 @@ protocol InteractionsClientProtocol {
     func create(question: String, agent: AgentKind) async throws -> Interaction
     func get(id: String) async throws -> Interaction
     func cancel(id: String) async throws -> Interaction
+
+    /// Cria uma interaction com `stream: true` e devolve o stream SSE.
+    /// Se a API não suportar streaming (resposta JSON), decodifica como Interaction normal.
+    /// Implementação padrão: lança erro → coordinator cai para polling.
+    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent>
+}
+
+// MARK: - Default: streaming não suportado
+
+extension InteractionsClientProtocol {
+    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent> {
+        throw ClientError.http(0, message: "streaming não suportado pelo client")
+    }
 }
 
 struct URLSessionInteractionsClient: InteractionsClientProtocol {
@@ -59,6 +72,73 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
 
     func cancel(id: String) async throws -> Interaction {
         try await perform(requestForInteraction(id: id, action: "cancel"))
+    }
+
+    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent> {
+        let body: [String: Any] = [
+            "input": question,
+            "agent": Self.agentIdentifier(for: agent),
+            "stream": true,
+        ]
+        guard JSONSerialization.isValidJSONObject(body) else {
+            throw ClientError.http(0, message: "corpo de create inválido")
+        }
+        var request = URLRequest(url: Self.baseURL.appendingPathComponent("interactions"))
+        request.httpMethod = "POST"
+        request.setValue(try apiKeyProvider(), forHTTPHeaderField: "x-goog-api-key")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (bytes, response) = try await session.bytes(for: request)
+        try Self.throwIfError(response: response)
+
+        // Resposta JSON = API não suportou streaming → decodifica como Interaction normal.
+        if let httpResponse = response as? HTTPURLResponse,
+           let ct = httpResponse.value(forHTTPHeaderField: "Content-Type"),
+           ct.contains("application/json")
+        {
+            var rawBytes: [UInt8] = []
+            for try await byte in bytes { rawBytes.append(byte) }
+            let data = Data(rawBytes)
+            let interaction = try JSONDecoder().decode(Interaction.self, from: data)
+            return AsyncStream { continuation in
+                continuation.yield(.interactionCreated(id: interaction.id, status: interaction.status.apiValue))
+                for step in interaction.steps {
+                    continuation.yield(.stepStart(index: 0, stepType: step.typeName))
+                    continuation.yield(.stepStop(index: 0))
+                }
+                continuation.yield(.done)
+                continuation.finish()
+            }
+        }
+
+        // Stream SSE — parse linha a linha.
+        return AsyncStream { continuation in
+            let task = Task {
+                var pendingLines: [String] = []
+                for try await line in bytes.lines {
+                    if line.isEmpty {
+                        if !pendingLines.isEmpty, let event = SSEParser.parseEvent(pendingLines) {
+                            continuation.yield(event)
+                            if case .done = event {
+                                continuation.finish()
+                                return
+                            }
+                        }
+                        pendingLines.removeAll(keepingCapacity: true)
+                    } else {
+                        pendingLines.append(line)
+                    }
+                }
+                // Último evento sem linha em branco final.
+                if !pendingLines.isEmpty, let event = SSEParser.parseEvent(pendingLines) {
+                    continuation.yield(event)
+                }
+                continuation.yield(.done)
+                continuation.finish()
+            }
+            continuation.onTermination = { @Sendable _ in task.cancel() }
+        }
     }
 
     private func requestForInteraction(id: String, action: String? = nil) -> URLRequest {
@@ -137,6 +217,15 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
               let error = object["error"] as? [String: Any]
         else { return nil }
         return error["message"] as? String
+    }
+
+    private static func throwIfError(response: URLResponse) throws {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ClientError.transport("resposta não-HTTP")
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw clientError(statusCode: httpResponse.statusCode, body: Data(), interactionURLPath: nil)
+        }
     }
 
     static func agentIdentifier(for agent: AgentKind) -> String {
