@@ -97,6 +97,26 @@
         "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O que vamos descobrir?" } }
       }
     },
+    "report.completedIn" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluída em %lld min" } }
+      }
+    },
+    "report.copyMarkdown" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Copiar Markdown" } }
+      }
+    },
+    "report.export" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Exportar" } }
+      }
+    },
+    "report.export.savePanel" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Exportar relatório" } }
+      }
+    },
     "phase.planning" : {
       "localizations" : {
         "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Planejando" } }
@@ -140,6 +160,36 @@
     "sidebar.selectSession.description" : {
       "localizations" : {
         "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Escolha um item na barra lateral ou comece uma nova pesquisa." } }
+      }
+    },
+    "notification.completed.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa concluída" } }
+      }
+    },
+    "notification.completed.body" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A pesquisa foi finalizada com sucesso." } }
+      }
+    },
+    "notification.failed.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa falhou" } }
+      }
+    },
+    "notification.failed.body" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Algo falhou durante a pesquisa." } }
+      }
+    },
+    "notification.cancelled.title" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa cancelada" } }
+      }
+    },
+    "notification.cancelled.body" : {
+      "localizations" : {
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A pesquisa foi cancelada." } }
       }
     }
   }
