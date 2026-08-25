@@ -148,13 +148,17 @@ struct ReportView: View {
                 continue
             }
 
-            // Heading: # ... ######
-            if trimmed.hasPrefix("#") && (trimmed.count < 7 || trimmed[trimmed.index(trimmed.startIndex, offsetBy: 6)] == " ") {
-                let level = trimmed.prefix(while: { $0 == "#" }).count
-                let text = String(trimmed.dropFirst(level)).trimmingCharacters(in: .whitespaces)
-                result.append(.heading(level: level, text))
-                i += 1
-                continue
+            // Heading ATX válido: 1–6 '#' seguidos de espaço ou fim da linha.
+            // (a checagem antiga exigia espaço no índice exato 6 e rejeitava
+            // praticamente todo heading real — por isso nada renderizava)
+            if trimmed.hasPrefix("#") {
+                let hashes = trimmed.prefix(while: { $0 == "#" }).count
+                let rest = trimmed.dropFirst(hashes)
+                if hashes >= 1 && hashes <= 6, rest.isEmpty || rest.hasPrefix(" ") {
+                    result.append(.heading(level: hashes, rest.trimmingCharacters(in: .whitespaces)))
+                    i += 1
+                    continue
+                }
             }
 
             // List item: - ...  * ...  1. ...

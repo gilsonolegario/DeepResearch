@@ -23,8 +23,8 @@ struct LiveLogView: View {
                 PhaseTrailView(currentPhase: session.phase)
             }
 
-            // Loading animation centralizada (quando poucos steps)
-            if session.status == .running && session.stepLog.count < 3 {
+            // Loading animation centralizada (apenas antes do 1º step chegar)
+            if session.status == .running && session.stepLog.isEmpty {
                 Spacer()
                 loadingAnimation
                 Spacer()
