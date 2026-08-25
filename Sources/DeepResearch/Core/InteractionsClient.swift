@@ -237,10 +237,18 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         }
     }
 
-    /// Concatena contexto da pasta + pergunta no campo `input`.
+    /// Concatena contexto da pasta + instrução de formato + pergunta no `input`.
+    /// (a API não suporta systemInstruction — a instrução vai no próprio input)
     private static func buildInput(question: String, context: String?) -> String {
-        guard let context, !context.isEmpty else { return question }
+        let formatInstruction = """
+        Responda SEMPRE em Markdown estruturado: use ## cabeçalhos para seções, \
+        - listas para itens, **negrito** para ênfase, tabelas | assim | para dados \
+        tabulares e `código` para termos técnicos.
+
+        """
+        guard let context, !context.isEmpty else { return formatInstruction + question }
         return """
+        \(formatInstruction)
         [Contexto de arquivos locais]
         \(context)
         [/Contexto]
