@@ -6,6 +6,10 @@ struct LiveLogView: View {
     let session: ResearchSession
     let coordinator: ResearchCoordinator
 
+    /// Ticker a cada segundo para atualizar a barra de progresso.
+    @State private var now = Date()
+    @State private var showReport = false
+
     var body: some View {
         VStack(spacing: 0) {
             // Banner para estados especiais
@@ -35,15 +39,42 @@ struct LiveLogView: View {
                 }
             }
 
-            // Barra de progresso indeterminada
+            // Barra de progresso determinada com tempo decorrido e countdown
             if session.status == .running {
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .tint(.blue)
+                ProgressFooterView(
+                    startedAt: session.startedAt,
+                    agent: session.agent,
+                    now: now
+                )
             }
         }
         .navigationTitle(session.question)
         .navigationSubtitle(subtitle)
+        .toolbar {
+            if session.status == .completed && session.reportText != nil {
+                Button {
+                    showReport = true
+                } label: {
+                    Label("Report", systemImage: "doc.text.magnifyingglass")
+                }
+            }
+        }
+        .sheet(isPresented: $showReport) {
+            NavigationStack {
+                ReportView(session: session)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showReport = false }
+                        }
+                    }
+            }
+        }
+        .onAppear {
+            now = Date()
+        }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { firedAt in
+            now = firedAt
+        }
     }
 
     private var subtitle: String {
@@ -125,6 +156,91 @@ private struct PhaseTrailView: View {
     }
 
     private enum PhaseState { case past, current, future }
+}
+
+// MARK: - ProgressFooterView
+
+/// Barra de progresso determinada com tempo decorrido e contagem regressiva.
+/// Duração estimada: regular ~3 min, max ~6 min (aproximação).
+private struct ProgressFooterView: View {
+    let startedAt: Date
+    let agent: AgentKind
+    let now: Date
+
+    /// Duração estimada total da pesquisa (em segundos).
+    private var estimatedDuration: TimeInterval {
+        switch agent {
+        case .regular: 180  // ~3 min
+        case .max: 360      // ~6 min
+        }
+    }
+
+    /// Tempo decorrido desde o início.
+    private var elapsed: TimeInterval {
+        now.timeIntervalSince(startedAt)
+    }
+
+    /// Progresso 0…1 (sem exceder 1.0).
+    private var progress: Double {
+        min(elapsed / estimatedDuration, 1.0)
+    }
+
+    /// Tempo restante estimado (em segundos, nunca negativo).
+    private var remaining: TimeInterval {
+        max(estimatedDuration - elapsed, 0)
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            // Barra de progresso
+            ProgressView(value: progress)
+                .progressViewStyle(.linear)
+                .tint(progressColor)
+
+            // Linha de tempo: elapsed ... countdown
+            HStack {
+                Text(elapsedText)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text(countdownText)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+    }
+
+    /// Texto do tempo decorrido: "1:23" ou "12:34"
+    private var elapsedText: String {
+        let totalSeconds = Int(elapsed)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    /// Texto da contagem regressiva: "~2:37 restantes"
+    private var countdownText: String {
+        if remaining < 1 {
+            return String(localized: "progress.finishing", bundle: .module)
+        }
+        let totalSeconds = Int(ceil(remaining))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        let time = String(format: "%d:%02d", minutes, seconds)
+        return "~\(time) \(String(localized: "progress.remaining", bundle: .module))"
+    }
+
+    /// Cor da barra muda conforme se aproxima do fim.
+    private var progressColor: Color {
+        if progress >= 0.9 { return .orange }
+        if progress >= 0.7 { return .yellow }
+        return .blue
+    }
 }
 
 // MARK: - StepRow

@@ -18,7 +18,11 @@ struct AppShellView: View {
             )
         } detail: {
             if showingNewResearch {
-                NewResearchView(coordinator: coordinator)
+                NewResearchView(
+                    coordinator: coordinator,
+                    selectedSessionID: $selectedSessionID,
+                    showingNewResearch: $showingNewResearch
+                )
             } else if let id = selectedSessionID,
                       let session = modelContext.model(for: id) as? ResearchSession {
                 LiveLogView(session: session, coordinator: coordinator)

@@ -301,6 +301,26 @@
         }
       }
     },
+    "report.fontLarger" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase font size"
+          }
+        }
+      }
+    },
+    "report.fontSmaller" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease font size"
+          }
+        }
+      }
+    },
     "report.export" : {
       "localizations" : {
         "en" : {
@@ -326,7 +346,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New Research"
+            "value" : "New"
           }
         }
       }

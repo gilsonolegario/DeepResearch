@@ -1,47 +1,48 @@
 import SwiftUI
 import AppKit
+import MarkdownEngine
 
-/// Relatório renderizado: blocos de markdown nativo intercalados com imagens inline.
-/// Toolbar: copiar markdown e exportar via NSSavePanel.
+/// Relatório renderizado via MarkdownEngine (code blocks, tabelas, listas).
+/// Toolbar: copiar markdown, exportar via NSSavePanel, e ajuste de tamanho de fonte.
 struct ReportView: View {
     let session: ResearchSession
 
-    private var reportBlocks: [ExportService.Block] {
-        ExportService.buildBlocks(
-            from: session.reportText ?? "",
-            images: session.images
-        )
-    }
+    @AppStorage("reportFontSize") private var fontSize: Double = 16
+    @State private var reportContent: String = ""
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                // Banner "concluída em X min"
-                CompletionBanner(session: session)
-
-                ForEach(Array(reportBlocks.enumerated()), id: \.offset) { _, block in
-                    switch block {
-                    case .text(let markdown):
-                        Text(.init(markdown))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                    case .image(let imageData):
-                        if let nsImage = NSImage(data: imageData) {
-                            Image(nsImage: nsImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: 600)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    }
-                }
-            }
-            .padding()
-        }
+        NativeTextViewWrapper(
+            text: $reportContent,
+            configuration: .default,
+            fontSize: fontSize,
+            isEditable: false,
+            placeholder: NSAttributedString(string: "")
+        )
         .navigationTitle(session.question)
         .toolbar {
             ToolbarItemGroup {
+                // Ajuste de fonte
+                Button {
+                    fontSize = max(fontSize - 2, 10)
+                } label: {
+                    Image(systemName: "textformat.size.smaller")
+                }
+                .help(String(localized: "report.fontSmaller", bundle: .module))
+
+                Text("\(Int(fontSize))pt")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32)
+
+                Button {
+                    fontSize = min(fontSize + 2, 32)
+                } label: {
+                    Image(systemName: "textformat.size.larger")
+                }
+                .help(String(localized: "report.fontLarger", bundle: .module))
+
+                Divider()
+
                 Button {
                     copyMarkdown()
                 } label: {
@@ -60,6 +61,9 @@ struct ReportView: View {
                     )
                 }
             }
+        }
+        .onAppear {
+            reportContent = session.reportText ?? ""
         }
     }
 
@@ -88,33 +92,5 @@ struct ReportView: View {
             images: session.images,
             to: directory
         )
-    }
-}
-
-// MARK: - CompletionBanner
-
-/// Banner compacto mostrando duração da pesquisa.
-private struct CompletionBanner: View {
-    let session: ResearchSession
-
-    private var durationMinutes: Int {
-        let start = session.startedAt
-        let end = session.finishedAt ?? Date()
-        return Int(end.timeIntervalSince(start) / 60)
-    }
-
-    var body: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-
-            Text(String(localized: "report.completedIn", defaultValue: "Concluída em \(durationMinutes) min", bundle: .module))
-                .font(.subheadline.bold())
-
-            Spacer()
-        }
-        .padding(10)
-        .background(.green.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

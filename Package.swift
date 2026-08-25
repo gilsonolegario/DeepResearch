@@ -6,9 +6,15 @@ let package = Package(
     platforms: [
         .macOS(.v15)
     ],
+    dependencies: [
+        .package(url: "https://github.com/nodes-app/swift-markdown-engine", from: "0.1.0"),
+    ],
     targets: [
         .executableTarget(
             name: "DeepResearch",
+            dependencies: [
+                .product(name: "MarkdownEngine", package: "swift-markdown-engine"),
+            ],
             path: "Sources/DeepResearch",
             resources: [
                 .process("Resources")
