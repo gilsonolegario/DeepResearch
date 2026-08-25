@@ -13,8 +13,36 @@ struct ReportView: View {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(Array(reportBlocks.enumerated()), id: \.offset) { _, block in
                     switch block {
+                    case .heading(let level, let markdown):
+                        inlineText(markdown)
+                            .font(headingFont(level))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, level == 1 ? 8 : 4)
+
+                    case .listItem(let text):
+                        HStack(alignment: .top, spacing: 6) {
+                            Text("•")
+                                .font(.system(size: fontSize))
+                            inlineText(text)
+                        }
+                        .font(.system(size: fontSize))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    case .blockquote(let text):
+                        HStack(alignment: .top, spacing: 8) {
+                            Rectangle()
+                                .fill(.tertiary)
+                                .frame(width: 3)
+                            inlineText(text)
+                        }
+                        .font(.system(size: fontSize))
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                     case .text(let markdown):
-                        Text(markdown)
+                        inlineText(markdown)
                             .font(.system(size: fontSize))
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -72,7 +100,27 @@ struct ReportView: View {
         }
     }
 
-    /// Parse do markdown em blocos de texto e código.
+    /// Renderiza inline markdown (bold, italic, code) via AttributedString.
+    private func inlineText(_ markdown: String) -> Text {
+        if let attributed = try? AttributedString(
+            markdown: markdown,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            return Text(attributed)
+        }
+        return Text(markdown)
+    }
+
+    private func headingFont(_ level: Int) -> Font {
+        switch level {
+        case 1: return .title.bold()
+        case 2: return .title2.bold()
+        case 3: return .title3.bold()
+        default: return .headline.bold()
+        }
+    }
+
+    /// Parse do markdown em blocos tipados.
     private var reportBlocks: [ReportBlock] {
         guard !reportContent.isEmpty else { return [] }
         var result: [ReportBlock] = []
@@ -81,10 +129,11 @@ struct ReportView: View {
 
         while i < lines.count {
             let line = lines[i]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
 
             // Code block: ```lang ... ```
-            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
-                let lang = String(line.trimmingCharacters(in: .whitespaces).dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") {
+                let lang = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
                 var codeLines: [String] = []
                 i += 1
                 while i < lines.count && !lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
@@ -96,13 +145,55 @@ struct ReportView: View {
                 continue
             }
 
-            // Texto: agrupa linhas até blank line ou code block
+            // Heading: # ... ######
+            if trimmed.hasPrefix("#") && (trimmed.count < 7 || trimmed[trimmed.index(trimmed.startIndex, offsetBy: 6)] == " ") {
+                let level = trimmed.prefix(while: { $0 == "#" }).count
+                let text = String(trimmed.dropFirst(level)).trimmingCharacters(in: .whitespaces)
+                result.append(.heading(level: level, text))
+                i += 1
+                continue
+            }
+
+            // List item: - ...  * ...  1. ...
+            if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") ||
+               (trimmed.count > 2 && trimmed[trimmed.index(trimmed.startIndex, offsetBy: 1)] == ".") {
+                let text: String
+                if trimmed.hasPrefix("- ") {
+                    text = String(trimmed.dropFirst(2))
+                } else if trimmed.hasPrefix("* ") {
+                    text = String(trimmed.dropFirst(2))
+                } else {
+                    // "1. text" — drop "N. "
+                    let dotIdx = trimmed.firstIndex(of: ".")!
+                    text = String(trimmed[trimmed.index(after: dotIdx)...]).trimmingCharacters(in: .whitespaces)
+                }
+                result.append(.listItem(text))
+                i += 1
+                continue
+            }
+
+            // Blockquote: > text
+            if trimmed.hasPrefix("> ") {
+                let text = String(trimmed.dropFirst(2))
+                result.append(.blockquote(text))
+                i += 1
+                continue
+            }
+
+            // Blank line — skip
+            if trimmed.isEmpty {
+                i += 1
+                continue
+            }
+
+            // Regular text: group consecutive non-special lines
             var textLines: [String] = []
             while i < lines.count {
-                let l = lines[i]
-                if l.trimmingCharacters(in: .whitespaces).isEmpty { i += 1; break }
-                if l.trimmingCharacters(in: .whitespaces).hasPrefix("```") { break }
-                textLines.append(l)
+                let l = lines[i].trimmingCharacters(in: .whitespaces)
+                if l.isEmpty || l.hasPrefix("#") || l.hasPrefix("```") ||
+                   l.hasPrefix("- ") || l.hasPrefix("* ") || l.hasPrefix("> ") ||
+                   (l.count > 2 && l[l.index(l.startIndex, offsetBy: 1)] == ".") { break }
+                textLines.append(lines[i])
                 i += 1
             }
             if !textLines.isEmpty {
@@ -113,11 +204,17 @@ struct ReportView: View {
     }
 
     private enum ReportBlock: Identifiable {
+        case heading(level: Int, String)
+        case listItem(String)
+        case blockquote(String)
         case text(String)
         case code(String, language: String)
 
         var id: Int {
             switch self {
+            case .heading(_, let s): s.hashValue
+            case .listItem(let s): s.hashValue
+            case .blockquote(let s): s.hashValue
             case .text(let s): s.hashValue
             case .code(let s, _): s.hashValue
             }
