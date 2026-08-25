@@ -46,10 +46,6 @@ struct SidebarView: View {
                     ForEach(activeSessions) { session in
                         ActiveSessionRow(session: session)
                             .tag(session.persistentModelID)
-                            .onTapGesture {
-                                showingNewResearch = false
-                                selectedSessionID = session.persistentModelID
-                            }
                     }
                 }
             }
@@ -60,12 +56,17 @@ struct SidebarView: View {
                     ForEach(filteredHistory) { session in
                         HistorySessionRow(session: session)
                             .tag(session.persistentModelID)
-                            .onTapGesture {
-                                showingNewResearch = false
-                                selectedSessionID = session.persistentModelID
-                            }
                     }
                 }
+            }
+        }
+        .onChange(of: selectedSessionID) { _, newValue in
+            // O próprio List cuida da seleção (fonte única de verdade).
+            // Havia .onTapGesture nas linhas competindo com ele: o 1º clique
+            // era consumido pela seleção do List e o gesto só passava no 2º,
+            // deixando o detalhe preso na Nova Pesquisa.
+            if newValue != nil {
+                showingNewResearch = false
             }
         }
         .navigationTitle(String(localized: "app.name", bundle: .module))

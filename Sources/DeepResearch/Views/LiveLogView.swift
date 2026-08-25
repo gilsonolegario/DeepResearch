@@ -6,10 +6,13 @@ struct LiveLogView: View {
     let session: ResearchSession
     let coordinator: ResearchCoordinator
 
-    /// Ticker a cada segundo para atualizar a barra de progresso.
-    @State private var now = Date()
+    /// Ticker a cada segundo vive no ProgressFooterView (único consumidor),
+    /// para sessões concluídas NÃO re-renderizarem a cada segundo.
     @State private var showReport = false
     @State private var pulse = false
+
+    /// Tamanho da fonte no log (compartilhado com o StepRow)
+    @AppStorage("logFontSize") private var fontSize: Double = 13
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,9 +36,16 @@ struct LiveLogView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 6) {
-                            ForEach(Array(session.stepLog.enumerated()), id: \.offset) { index, entry in
-                                StepRow(entry: entry)
+                            /// Steps with file context always appear last; others keep their relative order.
+            let contextEntries = session.stepLog.filter { $0.type == "user_input" && $0.text.hasPrefix("[Contexto de arquivos locais]") }
+            let otherEntries = session.stepLog.filter { !($0.type == "user_input" && $0.text.hasPrefix("[Contexto de arquivos locais]")) }
+            ForEach(Array(otherEntries.enumerated()), id: \.offset) { index, entry in
+                                StepRow(entry: entry, fontSize: fontSize)
                                     .id(index)
+            }
+            ForEach(Array(contextEntries.enumerated()), id: \.offset) { index, entry in
+                                StepRow(entry: entry, fontSize: fontSize)
+                                    .id(index + otherEntries.count)
                             }
                         }
                         .padding()
@@ -51,8 +61,7 @@ struct LiveLogView: View {
             if session.status == .running {
                 ProgressFooterView(
                     startedAt: session.startedAt,
-                    agent: session.agent,
-                    now: now
+                    agent: session.agent
                 )
             }
         }
@@ -60,10 +69,32 @@ struct LiveLogView: View {
         .navigationSubtitle(subtitle)
         .toolbar {
             if session.status == .completed && session.reportText != nil {
-                Button {
-                    showReport = true
-                } label: {
-                    Label("Report", systemImage: "doc.text.magnifyingglass")
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        showReport = true
+                    } label: {
+                        Label("Report", systemImage: "doc.text.magnifyingglass")
+                    }
+                }
+            }
+            if session.status == .completed {
+                // Pills de fonte centralizados (posição pedida pelo usuário).
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 4) {
+                        PillButton(systemImage: "textformat.size.smaller") {
+                            fontSize = max(fontSize - 2, 10)
+                        }
+                        .disabled(fontSize <= 10)
+
+                        Text("\(Int(fontSize))pt")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32)
+
+                        PillButton(systemImage: "textformat.size.larger") {
+                            fontSize = min(fontSize + 2, 32)
+                        }
+                    }
                 }
             }
         }
@@ -71,17 +102,17 @@ struct LiveLogView: View {
             NavigationStack {
                 ReportView(session: session)
                     .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            // Fechar explícito pedido pelo usuário (Esc também fecha).
+                            Button { showReport = false } label: {
+                                Label("Fechar", systemImage: "xmark.circle.fill")
+                            }
+                        }
                         ToolbarItem(placement: .confirmationAction) {
                             PillButton(systemImage: "checkmark") { showReport = false }
                         }
                     }
             }
-        }
-        .onAppear {
-            now = Date()
-        }
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { firedAt in
-            now = firedAt
         }
     }
 
@@ -236,7 +267,9 @@ private struct PhaseTrailView: View {
 private struct ProgressFooterView: View {
     let startedAt: Date
     let agent: AgentKind
-    let now: Date
+
+    /// Ticker local: re-renderiza SÓ este rodapé a cada segundo, não a view inteira.
+    @State private var now = Date()
 
     /// Duração estimada total da pesquisa (em segundos).
     private var estimatedDuration: TimeInterval {
@@ -284,6 +317,10 @@ private struct ProgressFooterView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial)
+        .onAppear { now = Date() }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { firedAt in
+            now = firedAt
+        }
     }
 
     /// Texto do tempo decorrido: "1:23" ou "12:34"
@@ -319,6 +356,7 @@ private struct ProgressFooterView: View {
 /// Uma linha do log: hora · ícone · texto.
 private struct StepRow: View {
     let entry: StepEntry
+    let fontSize: Double
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -332,6 +370,29 @@ private struct StepRow: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 14)
 
+            stepContent
+        }
+    }
+
+    /// model_output renderiza markdown de verdade; user_input com dump de
+    /// contexto de pasta vem colapsado (o JSON inteiro poluía o log).
+    @ViewBuilder private var stepContent: some View {
+        if entry.type == "model_output" {
+            MarkdownBlocksView(text: entry.text, fontSize: fontSize)
+        } else if entry.type == "user_input" && entry.text.hasPrefix("[Contexto de arquivos locais]") {
+            DisclosureGroup("Pergunta + contexto de pasta (\(entry.text.count) caracteres)") {
+                ScrollView {
+                    Text(entry.text)
+                        .font(.system(size: 12, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .background(.tertiary.opacity(0.1))
+                .cornerRadius(8)
+            }
+            .font(.callout)
+        } else {
             Text(entry.text)
                 .font(.callout)
                 .textSelection(.enabled)
