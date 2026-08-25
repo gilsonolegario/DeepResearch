@@ -8,7 +8,8 @@ import UserNotifications
 @MainActor
 final class PresenceManager: NSObject, ObservableObject, @preconcurrency UNUserNotificationCenterDelegate {
     private let coordinator: ResearchCoordinator
-    private let notificationCenter: UNUserNotificationCenter
+    private let notificationCenter: UNUserNotificationCenter?
+    private var hasBundle: Bool { Bundle.main.bundleIdentifier != nil }
 
     /// Snapshot do status das sessões no último tick — detecta transições.
     private var lastStatusSnapshot: [PersistentIdentifier: Status] = [:]
@@ -18,9 +19,14 @@ final class PresenceManager: NSObject, ObservableObject, @preconcurrency UNUserN
 
     init(coordinator: ResearchCoordinator) {
         self.coordinator = coordinator
-        self.notificationCenter = UNUserNotificationCenter.current()
+        // UNUserNotificationCenter exige .app bundle — binário solto crasha.
+        if Bundle.main.bundleIdentifier != nil {
+            self.notificationCenter = UNUserNotificationCenter.current()
+        } else {
+            self.notificationCenter = nil
+        }
         super.init()
-        notificationCenter.delegate = self
+        notificationCenter?.delegate = self
     }
 
     // MARK: - Dock
@@ -44,7 +50,7 @@ final class PresenceManager: NSObject, ObservableObject, @preconcurrency UNUserN
     func requestPermissionIfNeeded() {
         guard !permissionRequested else { return }
         permissionRequested = true
-        notificationCenter.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        notificationCenter?.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     /// Posta notificação SOMENTE se o app não está ativo.
@@ -65,7 +71,7 @@ final class PresenceManager: NSObject, ObservableObject, @preconcurrency UNUserN
             content: content,
             trigger: nil
         )
-        notificationCenter.add(request)
+        notificationCenter?.add(request)
     }
 
     // MARK: - Ciclo de vida (chamado pelo timer no App)

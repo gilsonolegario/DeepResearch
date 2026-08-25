@@ -47,6 +47,9 @@ struct ReportView: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
+                    case .table(let header, let rows):
+                        tableRender(header: header, rows: rows)
+
                     case .code(let code, _):
                         Text(code)
                             .font(.system(size: fontSize - 2, design: .monospaced))
@@ -180,6 +183,33 @@ struct ReportView: View {
                 continue
             }
 
+            // Table: | header | ... | (with optional |---| separator)
+            if trimmed.hasPrefix("|") && trimmed.hasSuffix("|") {
+                var tableLines: [String] = []
+                tableLines.append(trimmed)
+                i += 1
+                if i < lines.count && lines[i].trimmingCharacters(in: .whitespaces).contains("---") {
+                    i += 1
+                }
+                while i < lines.count {
+                    let tl = lines[i].trimmingCharacters(in: .whitespaces)
+                    if tl.hasPrefix("|") && tl.hasSuffix("|") {
+                        tableLines.append(tl)
+                        i += 1
+                    } else { break }
+                }
+                if tableLines.count >= 1 {
+                    let parseCells: (String) -> [String] = { line in
+                        String(line.dropFirst()).dropLast().components(separatedBy: "|").map {
+                            $0.trimmingCharacters(in: .whitespaces)
+                        }
+                    }
+                    let hdr = parseCells(tableLines[0])
+                    let rows = tableLines.dropFirst().map { parseCells($0) }
+                    result.append(.table(header: hdr, rows: Array(rows)))
+                }
+                continue
+            }
             // Blank line — skip
             if trimmed.isEmpty {
                 i += 1
@@ -191,7 +221,7 @@ struct ReportView: View {
             while i < lines.count {
                 let l = lines[i].trimmingCharacters(in: .whitespaces)
                 if l.isEmpty || l.hasPrefix("#") || l.hasPrefix("```") ||
-                   l.hasPrefix("- ") || l.hasPrefix("* ") || l.hasPrefix("> ") ||
+                   l.hasPrefix("- ") || l.hasPrefix("* ") || l.hasPrefix("> ") || (l.hasPrefix("|") && l.hasSuffix("|")) ||
                    (l.count > 2 && l[l.index(l.startIndex, offsetBy: 1)] == ".") { break }
                 textLines.append(lines[i])
                 i += 1
@@ -207,6 +237,7 @@ struct ReportView: View {
         case heading(level: Int, String)
         case listItem(String)
         case blockquote(String)
+        case table(header: [String], rows: [[String]])
         case text(String)
         case code(String, language: String)
 
@@ -215,10 +246,41 @@ struct ReportView: View {
             case .heading(_, let s): s.hashValue
             case .listItem(let s): s.hashValue
             case .blockquote(let s): s.hashValue
+            case .table(_, let rows): rows.description.hashValue
             case .text(let s): s.hashValue
             case .code(let s, _): s.hashValue
             }
         }
+    }
+
+    // MARK: - Table
+
+    private func tableRender(header: [String], rows: [[String]]) -> some View {
+        let cols = header.count
+        return ScrollView(.horizontal, showsIndicators: false) {
+            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+                GridRow {
+                    ForEach(0..<cols, id: \.self) { col in
+                        inlineText(col < header.count ? header[col] : "")
+                            .font(.system(size: fontSize - 1, weight: .bold))
+                            .gridColumnAlignment(.leading)
+                    }
+                }
+                Divider().gridCellUnsizedAxes(.horizontal)
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    GridRow {
+                        ForEach(0..<cols, id: \.self) { col in
+                            inlineText(col < row.count ? row[col] : "")
+                                .font(.system(size: fontSize - 1))
+                                .gridColumnAlignment(.leading)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Actions
