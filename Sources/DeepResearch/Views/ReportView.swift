@@ -159,7 +159,7 @@ struct ReportView: View {
 
             // List item: - ...  * ...  1. ...
             if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") ||
-               (trimmed.count > 2 && trimmed[trimmed.index(trimmed.startIndex, offsetBy: 1)] == ".") {
+               (trimmed.count > 2 && trimmed.first?.isNumber == true && trimmed[trimmed.index(trimmed.startIndex, offsetBy: 1)] == ".") {
                 let text: String
                 if trimmed.hasPrefix("- ") {
                     text = String(trimmed.dropFirst(2))
@@ -222,7 +222,7 @@ struct ReportView: View {
                 let l = lines[i].trimmingCharacters(in: .whitespaces)
                 if l.isEmpty || l.hasPrefix("#") || l.hasPrefix("```") ||
                    l.hasPrefix("- ") || l.hasPrefix("* ") || l.hasPrefix("> ") || (l.hasPrefix("|") && l.hasSuffix("|")) ||
-                   (l.count > 2 && l[l.index(l.startIndex, offsetBy: 1)] == ".") { break }
+                   (l.count > 2 && l.first?.isNumber == true && l[l.index(l.startIndex, offsetBy: 1)] == ".") { break }
                 textLines.append(lines[i])
                 i += 1
             }

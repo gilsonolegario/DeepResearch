@@ -19,20 +19,20 @@ enum ClientError: Error, Equatable {
 
 @MainActor
 protocol InteractionsClientProtocol {
-    func create(question: String, agent: AgentKind) async throws -> Interaction
+    func create(question: String, agent: AgentKind, context: String?) async throws -> Interaction
     func get(id: String) async throws -> Interaction
     func cancel(id: String) async throws -> Interaction
 
     /// Cria uma interaction com `stream: true` e devolve o stream SSE.
     /// Se a API não suportar streaming (resposta JSON), decodifica como Interaction normal.
     /// Implementação padrão: lança erro → coordinator cai para polling.
-    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent>
+    func createStream(question: String, agent: AgentKind, context: String?) async throws -> AsyncStream<SSEEvent>
 }
 
 // MARK: - Default: streaming não suportado
 
 extension InteractionsClientProtocol {
-    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent> {
+    func createStream(question: String, agent: AgentKind, context: String? = nil) async throws -> AsyncStream<SSEEvent> {
         throw ClientError.http(0, message: "streaming não suportado pelo client")
     }
 }
@@ -51,9 +51,10 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         self.session = URLSession(configuration: sessionConfiguration)
     }
 
-    func create(question: String, agent: AgentKind) async throws -> Interaction {
+    func create(question: String, agent: AgentKind, context: String? = nil) async throws -> Interaction {
+        let input = Self.buildInput(question: question, context: context)
         let body: [String: Any] = [
-            "input": question,
+            "input": input,
             "agent": Self.agentIdentifier(for: agent),
             // Sempre background: o fluxo do app é criar → acompanhar → cancelável.
             "background": true,
@@ -79,9 +80,10 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         try await perform(requestForInteraction(id: id, action: "cancel"))
     }
 
-    func createStream(question: String, agent: AgentKind) async throws -> AsyncStream<SSEEvent> {
+    func createStream(question: String, agent: AgentKind, context: String? = nil) async throws -> AsyncStream<SSEEvent> {
+        let input = Self.buildInput(question: question, context: context)
         let body: [String: Any] = [
-            "input": question,
+            "input": input,
             "agent": Self.agentIdentifier(for: agent),
             "stream": true,
             "systemInstruction": [
@@ -243,5 +245,17 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         case .regular: "deep-research-preview-04-2026"
         case .max: "deep-research-max-preview-04-2026"
         }
+    }
+
+    /// Concatena contexto da pasta + pergunta no campo `input`.
+    private static func buildInput(question: String, context: String?) -> String {
+        guard let context, !context.isEmpty else { return question }
+        return """
+        [Contexto de arquivos locais]
+        \(context)
+        [/Contexto]
+
+        Pergunta do usuário: \(question)
+        """
     }
 }

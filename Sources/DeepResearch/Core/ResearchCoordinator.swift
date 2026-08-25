@@ -53,14 +53,14 @@ final class ResearchCoordinator {
     // MARK: - Ciclo de vida
 
     /// Dispara uma nova pesquisa: tenta streaming; se falhar, cria background + polling.
-    func start(question: String, agent: AgentKind = .regular) async {
+    func start(question: String, agent: AgentKind = .regular, context: String? = nil) async {
         let session = ResearchSession(question: question, agent: agent, status: .queued)
         modelContext.insert(session)
         do { try modelContext.save() } catch { return }
 
         // 1ª tentativa: streaming (stream:true, sem background).
         do {
-            let stream = try await client.createStream(question: question, agent: agent)
+            let stream = try await client.createStream(question: question, agent: agent, context: context)
             session.status = .running
             try modelContext.save()
             startStreamingMonitor(session: session, stream: stream)
@@ -71,7 +71,7 @@ final class ResearchCoordinator {
 
         // Fallback: cria background + polling.
         do {
-            let interaction = try await client.create(question: question, agent: agent)
+            let interaction = try await client.create(question: question, agent: agent, context: context)
             session.interactionID = interaction.id
             session.status = .running
             try modelContext.save()
