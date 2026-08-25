@@ -13,18 +13,9 @@ struct LiveLogView: View {
                 StatusBannerView(session: session, coordinator: coordinator)
             }
 
-            // Fase atual
-            if let phase = session.phase, session.status == .running {
-                HStack {
-                    Image(systemName: phaseIcon(phase))
-                        .foregroundStyle(.blue)
-                    Text(phase.label)
-                        .font(.headline)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(.ultraThinMaterial)
+            // Trilha de fases (Planejando → Pesquisando → Escrevendo)
+            if session.status == .running {
+                PhaseTrailView(currentPhase: session.phase)
             }
 
             // Lista de etapas
@@ -70,6 +61,61 @@ struct LiveLogView: View {
         }
     }
 
+}
+
+// MARK: - PhaseTrailView
+
+/// Trilha horizontal das fases: Planejando → Pesquisando → Escrevendo.
+/// Fase atual destacada, passadas esmaecidas com checkmark, futuras em terciária.
+private struct PhaseTrailView: View {
+    let currentPhase: Phase?
+
+    private static let allPhases: [Phase] = [.planning, .researching, .synthesizing]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(Self.allPhases.enumerated()), id: \.offset) { index, phase in
+                let state = phaseState(for: phase)
+
+                HStack(spacing: 4) {
+                    if state == .past {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Image(systemName: phaseIcon(phase))
+                            .foregroundStyle(state == .current ? Color.accentColor : .secondary)
+                    }
+
+                    Text(phase.label)
+                        .font(state == .current ? .headline : .subheadline)
+                        .foregroundStyle(
+                            state == .current ? Color.accentColor :
+                            state == .past ? Color.secondary : Color(.tertiaryLabelColor)
+                        )
+                }
+
+                if index < Self.allPhases.count - 1 {
+                    Image(systemName: "chevron.forward")
+                        .font(.caption2)
+                        .foregroundStyle(.quaternary)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+    }
+
+    private func phaseState(for phase: Phase) -> PhaseState {
+        guard let current = currentPhase else { return .future }
+        let all = Self.allPhases
+        guard let currentIndex = all.firstIndex(of: current),
+              let phaseIndex = all.firstIndex(of: phase) else { return .future }
+        if phaseIndex < currentIndex { return .past }
+        if phaseIndex == currentIndex { return .current }
+        return .future
+    }
+
     private func phaseIcon(_ phase: Phase) -> String {
         switch phase {
         case .planning: "brain"
@@ -77,6 +123,8 @@ struct LiveLogView: View {
         case .synthesizing: "text.magnifyingglass"
         }
     }
+
+    private enum PhaseState { case past, current, future }
 }
 
 // MARK: - StepRow

@@ -124,6 +124,25 @@ final class ResearchCoordinator {
         monitoringTasks.count > 0
     }
 
+    /// Número de sessões com monitoramento ativo (para dock progress).
+    var activeSessionCount: Int {
+        monitoringTasks.count
+    }
+
+    /// Snapshot das sessões com interactionID e seus status atuais.
+    /// Usado para detectar transições de terminal no PresenceManager.
+    var terminalTransitions: [PersistentIdentifier: Status] {
+        var result: [PersistentIdentifier: Status] = [:]
+        let descriptor = FetchDescriptor<ResearchSession>(
+            predicate: #Predicate<ResearchSession> { $0.interactionID != nil }
+        )
+        guard let sessions = try? modelContext.fetch(descriptor) else { return result }
+        for session in sessions {
+            result[session.persistentModelID] = session.status
+        }
+        return result
+    }
+
     /// Verifica monitoramento para uma sessão específica.
     func isMonitoring(for session: ResearchSession) -> Bool {
         monitoringTasks[session.persistentModelID] != nil

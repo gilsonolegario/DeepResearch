@@ -7,6 +7,7 @@ struct DeepResearchApp: App {
     /// Instância única: o coordinator guarda Tasks de monitoramento e estado
     /// observável — criar por view duplicaria tudo (bug evitado de propósito).
     private let coordinator: ResearchCoordinator
+    @State private var presenceManager: PresenceManager
 
     init() {
         do {
@@ -21,12 +22,20 @@ struct DeepResearchApp: App {
             client: URLSessionInteractionsClient(apiKeyProvider: { try keyStore.loadKey() }),
             modelContext: ModelContext(container)
         )
+        presenceManager = PresenceManager(coordinator: coordinator)
     }
 
     var body: some Scene {
         WindowGroup {
             AppShellView(coordinator: coordinator)
                 .modelContainer(container)
+                .onAppear {
+                    Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                        Task { @MainActor in
+                            presenceManager.tick()
+                        }
+                    }
+                }
         }
         .defaultSize(width: 960, height: 640)
     }
