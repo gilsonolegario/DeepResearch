@@ -58,11 +58,6 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
             "agent": Self.agentIdentifier(for: agent),
             // Sempre background: o fluxo do app é criar → acompanhar → cancelável.
             "background": true,
-            "systemInstruction": [
-                "parts": [[
-                    "text": "Format your entire response in Markdown. Use ## headers for sections, - bullet lists for items, **bold** for emphasis, > blockquotes for citations, | tables | for tabular data, and `inline code` for technical terms. Never use plain prose — always use Markdown structure."
-                ]]
-            ],
         ]
         guard JSONSerialization.isValidJSONObject(body) else {
             throw ClientError.http(0, message: "corpo de create inválido")
@@ -86,11 +81,6 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
             "input": input,
             "agent": Self.agentIdentifier(for: agent),
             "stream": true,
-            "systemInstruction": [
-                "parts": [[
-                    "text": "Format your entire response in Markdown. Use ## headers for sections, - bullet lists for items, **bold** for emphasis, > blockquotes for citations, | tables | for tabular data, and `inline code` for technical terms. Never use plain prose — always use Markdown structure."
-                ]]
-            ],
         ]
         guard JSONSerialization.isValidJSONObject(body) else {
             throw ClientError.http(0, message: "corpo de create inválido")
