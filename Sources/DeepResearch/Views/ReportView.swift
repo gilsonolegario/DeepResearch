@@ -8,10 +8,13 @@ struct ReportView: View {
     @AppStorage("reportFontSize") private var fontSize: Double = 16
     @State private var reportContent: String = ""
 
+    /// Blocos parseados UMA vez — reparsar a cada render travava relatórios longos.
+    @State private var blocks: [ReportBlock] = []
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(Array(reportBlocks.enumerated()), id: \.offset) { _, block in
+            LazyVStack(alignment: .leading, spacing: 12) {
+                ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                     switch block {
                     case .heading(let level, let markdown):
                         inlineText(markdown)
@@ -100,6 +103,8 @@ struct ReportView: View {
         }
         .onAppear {
             reportContent = session.reportText ?? ""
+            // Parse único na abertura — re-parsear por render causava beachball.
+            blocks = parseBlocks(reportContent)
         }
     }
 
@@ -123,11 +128,11 @@ struct ReportView: View {
         }
     }
 
-    /// Parse do markdown em blocos tipados.
-    private var reportBlocks: [ReportBlock] {
-        guard !reportContent.isEmpty else { return [] }
+    /// Parse do markdown em blocos tipados — chamado UMA vez por relatório.
+    private func parseBlocks(_ content: String) -> [ReportBlock] {
+        guard !content.isEmpty else { return [] }
         var result: [ReportBlock] = []
-        let lines = reportContent.components(separatedBy: "\n")
+        let lines = content.components(separatedBy: "\n")
         var i = 0
 
         while i < lines.count {
