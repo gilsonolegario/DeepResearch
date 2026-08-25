@@ -1,196 +1,386 @@
 {
-  "sourceLanguage" : "pt-BR",
-  "version" : "1.0",
+  "sourceLanguage" : "en",
   "strings" : {
     "app.name" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "DeepResearch" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DeepResearch"
+          }
+        }
       }
     },
     "banner.cancelled.message" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa cancelada. Todo o progresso até aqui foi preservado." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research cancelled. All progress so far has been preserved."
+          }
+        }
       }
     },
     "banner.cancelled.title" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Cancelada" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        }
       }
     },
     "banner.failed.message" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Algo falhou durante a pesquisa. O que foi coletado continua aqui." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong during the research. What was collected is still here."
+          }
+        }
       }
     },
     "banner.failed.title" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Falhou" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        }
       }
     },
     "banner.interrupted.message" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Interrompida quando o app fechou. O acompanhamento será retomado automaticamente." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrupted when the app closed. Tracking will resume automatically."
+          }
+        }
       }
     },
     "banner.interrupted.title" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Interrompida" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrupted"
+          }
+        }
       }
     },
     "banner.newResearch" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nova pesquisa" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Research"
+          }
+        }
       }
     },
     "banner.retry" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Tentar novamente" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        }
       }
     },
     "liveLog.status.cancelled" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Cancelada" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        }
       }
     },
     "liveLog.status.completed" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluída" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed"
+          }
+        }
       }
     },
     "liveLog.status.failed" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Falhou" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        }
       }
     },
     "liveLog.status.queued" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Na fila" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queued"
+          }
+        }
       }
     },
     "liveLog.status.running" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Em andamento" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running"
+          }
+        }
       }
     },
     "newResearch.agentMax" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo Max (mais completo)" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max Mode (more thorough)"
+          }
+        }
       }
     },
     "newResearch.placeholder" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Sobre o que você quer pesquisar a fundo?" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you like to research in depth?"
+          }
+        }
       }
     },
     "newResearch.start" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisar" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research"
+          }
+        }
       }
     },
     "newResearch.subtitle" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Uma pergunta, uma investigação completa com fontes." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One question, a complete investigation with sources."
+          }
+        }
       }
     },
     "newResearch.title" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O que vamos descobrir?" } }
-      }
-    },
-    "report.completedIn" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluída em %lld min" } }
-      }
-    },
-    "report.copyMarkdown" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Copiar Markdown" } }
-      }
-    },
-    "report.export" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Exportar" } }
-      }
-    },
-    "report.export.savePanel" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Exportar relatório" } }
-      }
-    },
-    "phase.planning" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Planejando" } }
-      }
-    },
-    "phase.researching" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisando" } }
-      }
-    },
-    "phase.synthesizing" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Escrevendo" } }
-      }
-    },
-    "sidebar.newResearch" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nova pesquisa" } }
-      }
-    },
-    "sidebar.search.placeholder" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Buscar no histórico" } }
-      }
-    },
-    "sidebar.section.active" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ativas" } }
-      }
-    },
-    "sidebar.section.history" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Histórico" } }
-      }
-    },
-    "sidebar.selectSession" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nenhuma pesquisa selecionada" } }
-      }
-    },
-    "sidebar.selectSession.description" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Escolha um item na barra lateral ou comece uma nova pesquisa." } }
-      }
-    },
-    "notification.completed.title" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa concluída" } }
-      }
-    },
-    "notification.completed.body" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A pesquisa foi finalizada com sucesso." } }
-      }
-    },
-    "notification.failed.title" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa falhou" } }
-      }
-    },
-    "notification.failed.body" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Algo falhou durante a pesquisa." } }
-      }
-    },
-    "notification.cancelled.title" : {
-      "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pesquisa cancelada" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What shall we discover?"
+          }
+        }
       }
     },
     "notification.cancelled.body" : {
       "localizations" : {
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A pesquisa foi cancelada." } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The research has been cancelled."
+          }
+        }
+      }
+    },
+    "notification.cancelled.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research Cancelled"
+          }
+        }
+      }
+    },
+    "notification.completed.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The research has been completed successfully."
+          }
+        }
+      }
+    },
+    "notification.completed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research Completed"
+          }
+        }
+      }
+    },
+    "notification.failed.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong during the research."
+          }
+        }
+      }
+    },
+    "notification.failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research Failed"
+          }
+        }
+      }
+    },
+    "phase.planning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planning"
+          }
+        }
+      }
+    },
+    "phase.researching" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Researching"
+          }
+        }
+      }
+    },
+    "phase.synthesizing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Writing"
+          }
+        }
+      }
+    },
+    "report.completedIn" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed in %lld min"
+          }
+        }
+      }
+    },
+    "report.copyMarkdown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Markdown"
+          }
+        }
+      }
+    },
+    "report.export" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        }
+      }
+    },
+    "report.export.savePanel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Report"
+          }
+        }
+      }
+    },
+    "sidebar.newResearch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Research"
+          }
+        }
+      }
+    },
+    "sidebar.search.placeholder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search history"
+          }
+        }
+      }
+    },
+    "sidebar.section.active" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        }
+      }
+    },
+    "sidebar.section.history" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        }
+      }
+    },
+    "sidebar.selectSession" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No research selected"
+          }
+        }
+      }
+    },
+    "sidebar.selectSession.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an item in the sidebar or start a new research."
+          }
+        }
       }
     }
-  }
+  },
+  "version" : "1.0"
 }

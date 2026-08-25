@@ -8,6 +8,7 @@ struct DeepResearchApp: App {
     /// observável — criar por view duplicaria tudo (bug evitado de propósito).
     private let coordinator: ResearchCoordinator
     @State private var presenceManager: PresenceManager
+    @State private var dockTimer: Timer?
 
     init() {
         do {
@@ -30,11 +31,15 @@ struct DeepResearchApp: App {
             AppShellView(coordinator: coordinator)
                 .modelContainer(container)
                 .onAppear {
-                    Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                    dockTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
                         Task { @MainActor in
                             presenceManager.tick()
                         }
                     }
+                }
+                .onDisappear {
+                    dockTimer?.invalidate()
+                    dockTimer = nil
                 }
         }
         .defaultSize(width: 960, height: 640)
