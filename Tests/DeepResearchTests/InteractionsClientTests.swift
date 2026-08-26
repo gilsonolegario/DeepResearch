@@ -108,7 +108,8 @@ final class InteractionsClientTests: XCTestCase {
         XCTAssertEqual(sent.value(forHTTPHeaderField: "x-goog-api-key"), "key-de-teste")
 
         let payload = try XCTUnwrap(Self.jsonBody(of: sent) as? [String: Any])
-        XCTAssertEqual(payload["input"] as? String, "capital do Brasil?")
+        let input = try XCTUnwrap(payload["input"] as? String)
+        XCTAssertTrue(input.hasSuffix("capital do Brasil?"), "input deve terminar com a pergunta — prefixo de formato é interno")
         XCTAssertEqual(payload["agent"] as? String, "deep-research-preview-04-2026")
         XCTAssertEqual(payload["background"] as? Bool, true)
     }

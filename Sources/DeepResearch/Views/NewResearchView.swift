@@ -10,8 +10,20 @@ struct NewResearchView: View {
     @State private var question: String = ""
     @State private var contextURL: URL? = nil
     @AppStorage("agentKind") private var agentKind: AgentKind = .regular
+    @AppStorage(AppPreferences.defaultContextFolderPath) private var defaultContextFolderPath: String = ""
     @FocusState private var isFocused: Bool
     @Environment(\.modelContext) private var modelContext
+
+    /// Aplica a pasta padrão salva em Preferences quando a view aparece
+    /// (se existir em disco e ainda não houver contexto escolhido).
+    private func applyDefaultContextIfNeeded() {
+        guard contextURL == nil, !defaultContextFolderPath.isEmpty else { return }
+        let url = URL(fileURLWithPath: defaultContextFolderPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { return }
+        contextURL = url
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -112,6 +124,8 @@ struct NewResearchView: View {
 
             Spacer()
         }
+        .onAppear { applyDefaultContextIfNeeded() }
+        .onChange(of: defaultContextFolderPath) { _, _ in applyDefaultContextIfNeeded() }
     }
 
     @ViewBuilder private var appIcon: some View {

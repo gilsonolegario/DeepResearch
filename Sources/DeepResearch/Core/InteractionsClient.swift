@@ -231,10 +231,7 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
     }
 
     static func agentIdentifier(for agent: AgentKind) -> String {
-        switch agent {
-        case .regular: "deep-research-preview-04-2026"
-        case .max: "deep-research-max-preview-04-2026"
-        }
+        AppPreferences.modelIdentifier(for: agent)
     }
 
     /// Concatena contexto da pasta + instrução de formato + pergunta no `input`.

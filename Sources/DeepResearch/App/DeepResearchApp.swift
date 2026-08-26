@@ -43,5 +43,9 @@ struct DeepResearchApp: App {
                 }
         }
         .defaultSize(width: 960, height: 640)
+
+        Settings {
+            PreferencesView()
+        }
     }
 }
