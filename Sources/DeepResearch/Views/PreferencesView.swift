@@ -23,6 +23,8 @@ struct PreferencesView: View {
 
     @AppStorage(AppPreferences.logFontSize) private var logFontSize: Double = 13
 
+    @AppStorage(AppPreferences.defaultDeadlineSeconds) private var defaultDeadlineSeconds: Int = AppPreferences.defaultDeadlineSecondsValue
+
     // MARK: - Default context
 
     @AppStorage(AppPreferences.defaultContextFolderPath) private var defaultContextFolderPath: String = ""
@@ -31,6 +33,7 @@ struct PreferencesView: View {
         Form {
             apiKeySection
             researchSection
+            deadlineSection
             appearanceSection
             contextSection
         }
@@ -146,6 +149,26 @@ struct PreferencesView: View {
             Label("Research", systemImage: "magnifyingglass")
         } footer: {
             Text("Empty restores the default. Identifiers are sent as `agent` to the Interactions API.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var deadlineSection: some View {
+        Section {
+            Picker("Default timeout", selection: $defaultDeadlineSeconds) {
+                Text("5 min").tag(300)
+                Text("15 min (recommended)").tag(900)
+                Text("30 min").tag(1800)
+                Text("1 hour").tag(3600)
+                Text("No timeout").tag(0)
+            }
+            .pickerStyle(.segmented)
+            // segmented Picker clips if too many items — keep 5, no Default label here (default IS 15m)
+        } header: {
+            Label("Default deadline", systemImage: "timer")
+        } footer: {
+            Text("Applies to new research when no per-question deadline is chosen. Watchdog only triggers when no progress beyond the question.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

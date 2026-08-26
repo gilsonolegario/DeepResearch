@@ -20,7 +20,7 @@ final class StreamingMockClient: InteractionsClientProtocol, @unchecked Sendable
         self.getResult = getResult
     }
 
-    func create(question: String, agent: AgentKind, context: String? = nil) async throws -> Interaction {
+    func create(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> Interaction {
         switch createResult {
         case .success(let i): i
         case .failure(let e): throw e
@@ -39,7 +39,7 @@ final class StreamingMockClient: InteractionsClientProtocol, @unchecked Sendable
         fatalError("cancel não configurado neste mock")
     }
 
-    func createStream(question: String, agent: AgentKind, context: String? = nil) async throws -> AsyncStream<SSEEvent> {
+    func createStream(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> AsyncStream<SSEEvent> {
         switch streamResult {
         case .success(let s): s
         case .failure(let e): throw e

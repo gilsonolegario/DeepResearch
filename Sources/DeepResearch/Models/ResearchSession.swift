@@ -56,6 +56,12 @@ final class ResearchSession {
     var reportText: String?
     /// Infográficos do relatório; externalStorage evita inflar o store principal.
     @Attribute(.externalStorage) var images: [Data] = []
+    /// Deadline por pergunta em segundos. nil = usa default global (stallTimeout).
+    /// 0 = sem timeout (nunca auto-falha por stall).
+    var deadlineSeconds: Int?
+    /// Encadeamento follow-up: interactionID da pesquisa pai (se for continuação).
+    var parentInteractionID: String?
+    var parentQuestion: String?
 
     init(
         question: String,
@@ -67,7 +73,10 @@ final class ResearchSession {
         finishedAt: Date? = nil,
         stepLog: [StepEntry] = [],
         reportText: String? = nil,
-        images: [Data] = []
+        images: [Data] = [],
+        deadlineSeconds: Int? = nil,
+        parentInteractionID: String? = nil,
+        parentQuestion: String? = nil
     ) {
         self.question = question
         self.agent = agent
@@ -79,5 +88,8 @@ final class ResearchSession {
         self.stepLog = stepLog
         self.reportText = reportText
         self.images = images
+        self.deadlineSeconds = deadlineSeconds
+        self.parentInteractionID = parentInteractionID
+        self.parentQuestion = parentQuestion
     }
 }

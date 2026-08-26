@@ -23,7 +23,7 @@ final class MockInteractionsClient: InteractionsClientProtocol, @unchecked Senda
         self.cancelResult = cancelResult
     }
 
-    func create(question: String, agent: AgentKind, context: String? = nil) async throws -> Interaction {
+    func create(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> Interaction {
         switch createResult {
         case .success(let i): i
         case .failure(let e): throw e

@@ -13,6 +13,8 @@ struct LiveLogView: View {
 
     /// Tamanho da fonte no log (compartilhado com o StepRow)
     @AppStorage("logFontSize") private var fontSize: Double = 13
+    @State private var followUpQuestion: String = ""
+    @FocusState private var followUpFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -73,17 +75,45 @@ struct LiveLogView: View {
                 }
             }
 
+            // Follow-up composer (terminal sessions — new question chained via previous_interaction_id)
+            if session.status.isTerminal {
+                Divider()
+                followUpComposer
+            }
+
             // Barra de progresso determinada com tempo decorrido e countdown
             if session.status == .running {
-                ProgressFooterView(
-                    startedAt: session.startedAt,
-                    agent: session.agent
-                )
+                // Stop visível ao lado do rodapé (sem depender do overflow da toolbar).
+                HStack(spacing: 12) {
+                    ProgressFooterView(
+                        startedAt: session.startedAt,
+                        agent: session.agent
+                    )
+
+                    Button(role: .destructive) {
+                        Task { await coordinator.cancel(session: session) }
+                    } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Cancel this research")
+                    .padding(.trailing)
+                }
             }
         }
         .navigationTitle(session.question)
         .navigationSubtitle(subtitle)
         .toolbar {
+            if session.status == .running {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .destructive) {
+                        Task { await coordinator.cancel(session: session) }
+                    } label: {
+                        Label("Cancel", systemImage: "xmark.circle")
+                    }
+                    .help("Cancel this research")
+                }
+            }
             if session.status == .completed && session.reportText != nil {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -202,6 +232,39 @@ struct LiveLogView: View {
         }
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         return (trimmed.isEmpty ? nil : trimmed, context)
+    }
+
+    private var followUpComposer: some View {
+        HStack(spacing: 8) {
+            if let parentQ = session.parentQuestion, !parentQ.isEmpty {
+                Image(systemName: "arrow.turn.down.right")
+                    .foregroundStyle(.secondary)
+                    .help("Follow-up to: \(parentQ)")
+            }
+            TextField("Ask a follow-up…", text: $followUpQuestion)
+                .textFieldStyle(.roundedBorder)
+                .focused($followUpFocused)
+                .onSubmit { sendFollowUp() }
+            Button {
+                sendFollowUp()
+            } label: {
+                Label("Ask", systemImage: "arrow.up.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(followUpQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .keyboardShortcut(.return, modifiers: .command)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+    }
+
+    private func sendFollowUp() {
+        let trimmed = followUpQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let q = trimmed
+        followUpQuestion = ""
+        Task { await coordinator.followUp(session: session, question: q) }
     }
 
     // MARK: - Loading Animation

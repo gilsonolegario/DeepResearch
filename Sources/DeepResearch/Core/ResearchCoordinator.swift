@@ -59,14 +59,30 @@ final class ResearchCoordinator {
     // MARK: - Ciclo de vida
 
     /// Dispara uma nova pesquisa: tenta streaming; se falhar, cria background + polling.
-    func start(question: String, agent: AgentKind = .regular, context: String? = nil) async {
-        let session = ResearchSession(question: question, agent: agent, status: .queued)
+    /// deadlineSeconds: nil = usa default global (AppPreferences/stallTimeout); 0 = sem timeout.
+    /// previousInteractionID/parentQuestion: encadeiam follow-up (api-contract: previous_interaction_id).
+    func start(
+        question: String,
+        agent: AgentKind = .regular,
+        context: String? = nil,
+        deadlineSeconds: Int? = nil,
+        previousInteractionID: String? = nil,
+        parentQuestion: String? = nil
+    ) async {
+        let session = ResearchSession(
+            question: question,
+            agent: agent,
+            status: .queued,
+            deadlineSeconds: deadlineSeconds,
+            parentInteractionID: previousInteractionID,
+            parentQuestion: parentQuestion
+        )
         modelContext.insert(session)
         do { try modelContext.save() } catch { return }
 
         // 1ª tentativa: streaming (stream:true, sem background).
         do {
-            let stream = try await client.createStream(question: question, agent: agent, context: context)
+            let stream = try await client.createStream(question: question, agent: agent, context: context, previousInteractionID: previousInteractionID)
             session.status = .running
             try modelContext.save()
             startStreamingMonitor(session: session, stream: stream)
@@ -77,7 +93,7 @@ final class ResearchCoordinator {
 
         // Fallback: cria background + polling.
         do {
-            let interaction = try await client.create(question: question, agent: agent, context: context)
+            let interaction = try await client.create(question: question, agent: agent, context: context, previousInteractionID: previousInteractionID)
             session.interactionID = interaction.id
             session.status = .running
             try modelContext.save()
@@ -196,7 +212,7 @@ final class ResearchCoordinator {
         monitoringTasks[sessionID] = TaskHandle(task: task)
     }
 
-    private func stopMonitoring(session: ResearchSession) {
+    func stopMonitoring(session: ResearchSession) {
         if let handle = monitoringTasks.removeValue(forKey: session.persistentModelID) {
             handle.task.cancel()
         }
@@ -477,14 +493,39 @@ final class ResearchCoordinator {
 
     // MARK: - Stall detection
 
-    /// Travou se: rodando há >= stallTimeout E só tem `user_input` no log
+    /// Travou se: rodando há >= timeout efetivo E só tem `user_input` no log
     /// (nenhum `thought`/`google_search` produzido pelo servidor).
+    /// deadlineSeconds da sessão tem precedência sobre o stallTimeout global.
     private func hasStalled(session: ResearchSession) -> Bool {
         guard session.status == .running else { return false }
+        let effectiveTimeout: Duration
+        if let ds = session.deadlineSeconds {
+            if ds == 0 { return false } // sem timeout
+            effectiveTimeout = .seconds(ds)
+        } else {
+            effectiveTimeout = stallTimeout
+        }
+        guard effectiveTimeout != .seconds(0) else { return false }
         let elapsed = Date.now.timeIntervalSince(session.startedAt)
-        guard elapsed >= Double(stallTimeout.components.seconds) else { return false }
+        guard elapsed >= Double(effectiveTimeout.components.seconds) else { return false }
         // Se já produziu qualquer step além do user_input, não é stall.
         return session.stepLog.allSatisfy { $0.type == "user_input" }
+    }
+
+    // MARK: - Follow-up
+
+    /// Cria uma pesquisa de follow-up vinculada à sessão pai via previous_interaction_id.
+    func followUp(session: ResearchSession, question: String, context: String? = nil) async {
+        let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        await start(
+            question: trimmed,
+            agent: session.agent,
+            context: context,
+            deadlineSeconds: session.deadlineSeconds,
+            previousInteractionID: session.interactionID,
+            parentQuestion: session.question
+        )
     }
 
     // MARK: - Query SwiftData

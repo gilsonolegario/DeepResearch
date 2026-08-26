@@ -10,6 +10,8 @@ struct SidebarView: View {
     @Query(sort: \ResearchSession.startedAt, order: .reverse)
     private var allSessions: [ResearchSession]
 
+    @Environment(\.modelContext) private var modelContext
+
     private var activeSessions: [ResearchSession] {
         allSessions.filter { !$0.status.isTerminal }
     }
@@ -46,6 +48,12 @@ struct SidebarView: View {
                     ForEach(activeSessions) { session in
                         ActiveSessionRow(session: session)
                             .tag(session.persistentModelID)
+                            .contextMenu {
+                                deleteButton(for: session)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                deleteButton(for: session)
+                            }
                     }
                 }
             }
@@ -56,6 +64,12 @@ struct SidebarView: View {
                     ForEach(filteredHistory) { session in
                         HistorySessionRow(session: session)
                             .tag(session.persistentModelID)
+                            .contextMenu {
+                                deleteButton(for: session)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                deleteButton(for: session)
+                            }
                     }
                 }
             }
@@ -71,6 +85,27 @@ struct SidebarView: View {
         }
         .navigationTitle(String(localized: "app.name", bundle: .module))
         .searchable(text: $searchText, prompt: String(localized: "sidebar.search.placeholder", bundle: .module))
+    }
+
+    // MARK: - Exclusão de sessão
+
+    private func deleteButton(for session: ResearchSession) -> some View {
+        Button(role: .destructive) {
+            deleteSession(session)
+        } label: {
+            Label(String(localized: "sidebar.delete", bundle: .module), systemImage: "trash")
+        }
+    }
+
+    private func deleteSession(_ session: ResearchSession) {
+        if coordinator.isMonitoring(for: session) {
+            coordinator.stopMonitoring(session: session)
+        }
+        if selectedSessionID == session.persistentModelID {
+            selectedSessionID = nil
+        }
+        modelContext.delete(session)
+        try? modelContext.save()
     }
 }
 

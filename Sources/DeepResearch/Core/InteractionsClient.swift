@@ -19,20 +19,28 @@ enum ClientError: Error, Equatable {
 
 @MainActor
 protocol InteractionsClientProtocol {
-    func create(question: String, agent: AgentKind, context: String?) async throws -> Interaction
+    func create(question: String, agent: AgentKind, context: String?, previousInteractionID: String?) async throws -> Interaction
     func get(id: String) async throws -> Interaction
     func cancel(id: String) async throws -> Interaction
 
     /// Cria uma interaction com `stream: true` e devolve o stream SSE.
     /// Se a API não suportar streaming (resposta JSON), decodifica como Interaction normal.
     /// Implementação padrão: lança erro → coordinator cai para polling.
-    func createStream(question: String, agent: AgentKind, context: String?) async throws -> AsyncStream<SSEEvent>
+    func createStream(question: String, agent: AgentKind, context: String?, previousInteractionID: String?) async throws -> AsyncStream<SSEEvent>
 }
 
-// MARK: - Default: streaming não suportado
+// MARK: - Defaults / convenience
 
 extension InteractionsClientProtocol {
+    func create(question: String, agent: AgentKind, context: String? = nil) async throws -> Interaction {
+        try await create(question: question, agent: agent, context: context, previousInteractionID: nil)
+    }
+
     func createStream(question: String, agent: AgentKind, context: String? = nil) async throws -> AsyncStream<SSEEvent> {
+        try await createStream(question: question, agent: agent, context: context, previousInteractionID: nil)
+    }
+
+    func createStream(question: String, agent: AgentKind, context: String?, previousInteractionID: String?) async throws -> AsyncStream<SSEEvent> {
         throw ClientError.http(0, message: "streaming não suportado pelo client")
     }
 }
@@ -51,14 +59,18 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         self.session = URLSession(configuration: sessionConfiguration)
     }
 
-    func create(question: String, agent: AgentKind, context: String? = nil) async throws -> Interaction {
+    func create(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> Interaction {
         let input = Self.buildInput(question: question, context: context)
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "input": input,
             "agent": Self.agentIdentifier(for: agent),
             // Sempre background: o fluxo do app é criar → acompanhar → cancelável.
             "background": true,
+            "system_instruction": Self.systemInstruction,
         ]
+        if let pid = previousInteractionID, !pid.isEmpty {
+            body["previous_interaction_id"] = pid
+        }
         guard JSONSerialization.isValidJSONObject(body) else {
             throw ClientError.http(0, message: "corpo de create inválido")
         }
@@ -75,13 +87,17 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         try await perform(requestForInteraction(id: id, action: "cancel"))
     }
 
-    func createStream(question: String, agent: AgentKind, context: String? = nil) async throws -> AsyncStream<SSEEvent> {
+    func createStream(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> AsyncStream<SSEEvent> {
         let input = Self.buildInput(question: question, context: context)
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "input": input,
             "agent": Self.agentIdentifier(for: agent),
             "stream": true,
+            "system_instruction": Self.systemInstruction,
         ]
+        if let pid = previousInteractionID, !pid.isEmpty {
+            body["previous_interaction_id"] = pid
+        }
         guard JSONSerialization.isValidJSONObject(body) else {
             throw ClientError.http(0, message: "corpo de create inválido")
         }
@@ -234,20 +250,20 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         AppPreferences.modelIdentifier(for: agent)
     }
 
-    /// Concatenates folder context + format instruction + question into `input`.
-    /// (the API doesn't support systemInstruction — the instruction goes in the input itself)
-    private static func buildInput(question: String, context: String?) -> String {
-        let formatInstruction = """
-        Always respond in structured Markdown: use ## headings for sections, \
-        - lists for items, **bold** for emphasis, | tables | for tabular data \
-        and `code` for technical terms. At the end, list sources as numbered \
-        academic references in the format \
-        [N] Title — Publisher/Venue (year). URL — never just the raw link.
+    /// Format instruction sent as `system_instruction` on interaction creation.
+    private static let systemInstruction = """
+    Always respond in structured Markdown: use ## headings for sections, \
+    - lists for items, **bold** for emphasis, | tables | for tabular data \
+    and `code` for technical terms. At the end, list sources as numbered \
+    academic references in the format \
+    [N] Title — Publisher/Venue (year). URL — never just the raw link.
+    """
 
-        """
-        guard let context, !context.isEmpty else { return formatInstruction + question }
+    /// Builds the user-visible input: folder context (if any) + question.
+    /// (the format instruction travels separately in `system_instruction`)
+    private static func buildInput(question: String, context: String?) -> String {
+        guard let context, !context.isEmpty else { return question }
         return """
-        \(formatInstruction)
         [Local file context]
         \(context)
         [/Local file context]

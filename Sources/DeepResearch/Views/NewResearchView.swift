@@ -11,6 +11,8 @@ struct NewResearchView: View {
     @State private var contextURL: URL? = nil
     @AppStorage("agentKind") private var agentKind: AgentKind = .regular
     @AppStorage(AppPreferences.defaultContextFolderPath) private var defaultContextFolderPath: String = ""
+    @AppStorage(AppPreferences.defaultDeadlineSeconds) private var defaultDeadlineSeconds: Int = AppPreferences.defaultDeadlineSecondsValue
+    @State private var deadlineSeconds: Int? = nil
     @FocusState private var isFocused: Bool
     @Environment(\.modelContext) private var modelContext
 
@@ -97,6 +99,24 @@ struct NewResearchView: View {
                 .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 500)
 
+                HStack(spacing: 12) {
+                    Label("Deadline", systemImage: "timer")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Picker("", selection: $deadlineSeconds) {
+                        Text("Default (15m)").tag(nil as Int?)
+                        Text("5 min").tag(300 as Int?)
+                        Text("15 min").tag(900 as Int?)
+                        Text("30 min").tag(1800 as Int?)
+                        Text("1 hour").tag(3600 as Int?)
+                        Text("No timeout").tag(0 as Int?)
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 160)
+                    Spacer()
+                }
+                .frame(maxWidth: 500)
+
                 HStack {
                     Toggle(String(localized: "newResearch.agentMax", bundle: .module), isOn: Binding(
                         get: { agentKind == .max },
@@ -164,8 +184,10 @@ struct NewResearchView: View {
 
         // Read folder context if selected.
         let context: String? = contextURL.map { FolderReader.readFolder($0) }
+        // nil in picker = "Default" → respect Preferences default
+        let effectiveDeadline: Int? = deadlineSeconds ?? defaultDeadlineSeconds
 
-        await coordinator.start(question: trimmed, agent: agentKind, context: context)
+        await coordinator.start(question: trimmed, agent: agentKind, context: context, deadlineSeconds: effectiveDeadline)
         question = ""
         contextURL = nil
 

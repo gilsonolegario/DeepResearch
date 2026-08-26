@@ -21,6 +21,10 @@ enum AppPreferences {
     /// Caminho da pasta padrão de contexto (vazia = nenhuma).
     static let defaultContextFolderPath = "defaultContextFolderPath"
 
+    /// Deadline padrão em segundos (nil/0 = desabilitado). Default 15 min.
+    static let defaultDeadlineSeconds = "defaultDeadlineSeconds"
+    static let defaultDeadlineSecondsValue: Int = 900
+
     /// Resolve o identificador de modelo para o agente, respeitando Overrides
     /// do usuário em UserDefaults e caindo para o default quando vazio.
     static func modelIdentifier(for agent: AgentKind) -> String {
