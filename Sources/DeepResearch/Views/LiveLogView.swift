@@ -446,9 +446,14 @@ private struct StepRow: View {
                 .cornerRadius(8)
             }
             .font(.callout)
+        } else if entry.type == "user_input" {
+            // A pergunta: destaque "título de seção" — maior e semibold que o
+            // corpo markdown, escalando junto com os pills A−/A+.
+            Text(entry.text)
+                .font(.system(size: fontSize * 1.2, weight: .semibold))
+                .textSelection(.enabled)
         } else {
-            // user_input e demais entradas de texto: mesmo tamanho do corpo
-            // markdown (escala junto com os pills A−/A+), não .callout pequeno.
+            // Demais entradas (thought, function_call, ...): tamanho do corpo.
             Text(entry.text)
                 .font(.system(size: fontSize))
                 .textSelection(.enabled)
