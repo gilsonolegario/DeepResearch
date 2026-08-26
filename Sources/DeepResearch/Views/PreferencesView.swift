@@ -10,7 +10,25 @@ struct PreferencesView: View {
     @State private var keyStatus: String = ""
     @State private var keyIsError: Bool = false
 
+    // MARK: - Model discovery
+
+    @State private var availableModels: [String] = []
+    @State private var isLoadingModels = false
+    @State private var modelsStatus: String = ""
+
     private var keyStore: APIKeyStore { APIKeyStore() }
+
+    /// Sem key não há como descobrir modelos — só cache/fallback.
+    private var hasAPIKey: Bool { keyStore.resolvedSource() != nil }
+
+    /// Subgrupo válido para a API Interactions vem primeiro.
+    private var deepResearchModels: [String] {
+        availableModels.filter { $0.contains("deep-research") }.sorted()
+    }
+
+    private var otherModels: [String] {
+        availableModels.filter { !$0.contains("deep-research") }.sorted()
+    }
 
     // MARK: - Default research
 
@@ -40,7 +58,10 @@ struct PreferencesView: View {
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .scrollContentBackground(.hidden)
-        .onAppear { refreshKeyStatus() }
+        .onAppear {
+            refreshKeyStatus()
+            loadModelsIfNeeded()
+        }
     }
 
     // MARK: - Sections
@@ -119,38 +140,101 @@ struct PreferencesView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Model — Regular")
                     .font(.caption.bold())
-                HStack(spacing: 8) {
-                    TextField(AppPreferences.defaultModelRegular, text: $modelRegular)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.callout, design: .monospaced))
-                    Button("Restore") { modelRegular = AppPreferences.defaultModelRegular }
-                        .disabled(modelRegular == AppPreferences.defaultModelRegular)
-                }
+                modelField(modelID: $modelRegular, defaultID: AppPreferences.defaultModelRegular)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Model — Max")
                     .font(.caption.bold())
-                HStack(spacing: 8) {
-                    TextField(AppPreferences.defaultModelMax, text: $modelMax)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(.callout, design: .monospaced))
-                    Button("Restore") { modelMax = AppPreferences.defaultModelMax }
-                        .disabled(modelMax == AppPreferences.defaultModelMax)
-                }
+                modelField(modelID: $modelMax, defaultID: AppPreferences.defaultModelMax)
             }
 
-            Button("Restore both to defaults") {
-                modelRegular = AppPreferences.defaultModelRegular
-                modelMax = AppPreferences.defaultModelMax
+            HStack(spacing: 8) {
+                Button("Restore both to defaults") {
+                    modelRegular = AppPreferences.defaultModelRegular
+                    modelMax = AppPreferences.defaultModelMax
+                }
+                .disabled(modelRegular == AppPreferences.defaultModelRegular && modelMax == AppPreferences.defaultModelMax)
+
+                Button {
+                    fetchModels()
+                } label: {
+                    if isLoadingModels {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Label("Refresh models", systemImage: "arrow.clockwise")
+                    }
+                }
+                .disabled(isLoadingModels || !hasAPIKey)
+
+                if !modelsStatus.isEmpty {
+                    Text(modelsStatus)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .disabled(modelRegular == AppPreferences.defaultModelRegular && modelMax == AppPreferences.defaultModelMax)
         } header: {
             Label("Research", systemImage: "magnifyingglass")
         } footer: {
-            Text("Empty restores the default. Identifiers are sent as `agent` to the Interactions API.")
+            Text("Empty restores the default. Identifiers are sent as `agent` to the Interactions API. Only deep-research* models work as agents; other entries are listed for reference.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+        }
+    }
+
+    /// Campo de modelo: TextField manual + Menu "Browse…" com os modelos descobertos.
+    private func modelField(modelID: Binding<String>, defaultID: String) -> some View {
+        HStack(spacing: 8) {
+            TextField(defaultID, text: modelID)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.callout, design: .monospaced))
+            badge(for: modelID.wrappedValue)
+
+            Menu {
+                Section("Deep research") {
+                    ForEach(deepResearchModels, id: \.self) { id in
+                        Button(id) { modelID.wrappedValue = id }
+                    }
+                }
+                Section("Other models") {
+                    ForEach(otherModels, id: \.self) { id in
+                        Button(id) { modelID.wrappedValue = id }
+                    }
+                }
+            } label: {
+                Label("Browse…", systemImage: "list.bullet")
+            }
+            .fixedSize()
+            .disabled(availableModels.isEmpty)
+
+            Button("Restore") { modelID.wrappedValue = defaultID }
+                .disabled(modelID.wrappedValue == defaultID)
+        }
+    }
+
+    @ViewBuilder
+    private func badge(for modelID: String) -> some View {
+        let text = badgeText(for: modelID)
+        Text(text)
+            .font(.caption2.weight(.medium))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(badgeColor(for: modelID).opacity(0.15)))
+            .foregroundStyle(badgeColor(for: modelID))
+            .help(text == "Limited" ? "Preview agent — may hit quota faster." : "")
+    }
+
+    private func badgeText(for modelID: String) -> String {
+        if modelID.contains("deep-research") { return "Limited" }
+        if modelID.contains("-flash-lite") || modelID.hasPrefix("gemma") { return "Free tier" }
+        return "Billing"
+    }
+
+    private func badgeColor(for modelID: String) -> Color {
+        switch badgeText(for: modelID) {
+        case "Limited": return .orange
+        case "Free tier": return .green
+        default: return .gray
         }
     }
 
@@ -266,6 +350,35 @@ struct PreferencesView: View {
             keyIsError = false
         } else {
             keyStatus = ""
+        }
+    }
+
+    // MARK: - Model discovery
+
+    /// Carrega o cache na hora; se estiver velho (ou vazio) e houver key, busca na API.
+    private func loadModelsIfNeeded() {
+        availableModels = AppPreferences.cachedModels() ?? AppPreferences.fallbackModels
+        guard AppPreferences.isCacheStale() else { return }
+        fetchModels()
+    }
+
+    private func fetchModels() {
+        guard hasAPIKey, !isLoadingModels else { return }
+        isLoadingModels = true
+        modelsStatus = ""
+        let client = URLSessionInteractionsClient(apiKeyProvider: { try APIKeyStore().loadKey() })
+        Task {
+            do {
+                let infos = try await client.listModels()
+                let ids = infos.map(\.id)
+                AppPreferences.saveCachedModels(ids)
+                availableModels = ids
+                // deep-research primeiro no Menu — se nenhum veio, mostra tudo como referência.
+                modelsStatus = "\(infos.filter(\.isDeepResearch).count) research model(s) found."
+            } catch {
+                modelsStatus = "Could not load models (\(error.localizedDescription)). Showing cached/fallback list."
+            }
+            isLoadingModels = false
         }
     }
 

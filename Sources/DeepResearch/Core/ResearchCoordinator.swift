@@ -400,8 +400,9 @@ final class ResearchCoordinator {
     private func statusFromAPI(_ api: InteractionStatus) -> Status {
         switch api {
         case .completed: .completed
-        case .failed: .failed
+        case .failed, .incomplete, .budgetExceeded: .failed
         case .cancelled: .cancelled
+        case .requiresAction: .requiresAction
         default: .running
         }
     }

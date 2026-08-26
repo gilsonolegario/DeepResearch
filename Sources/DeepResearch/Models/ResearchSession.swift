@@ -15,15 +15,17 @@ enum Status: String, Codable {
     /// Cancelada pelo usuário com todo o acumulado preservado.
     case cancelled
     case failed
+    /// API precisa de esclarecimento (requires_action) — segue em Ativas, com banner.
+    case requiresAction
     /// Estava em aberto quando o app fechou; re-adotada no próximo launch.
     case interrupted
 
     /// Fim de linha para a UI: sai de "Ativas" e entra no "Histórico".
-    /// `interrupted` NÃO é terminal — aguarda a re-adoção decidir o destino.
+    /// `interrupted` e `requiresAction` NÃO são terminais.
     var isTerminal: Bool {
         switch self {
         case .completed, .cancelled, .failed: true
-        case .queued, .running, .interrupted: false
+        case .queued, .running, .requiresAction, .interrupted: false
         }
     }
 }

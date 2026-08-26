@@ -174,6 +174,9 @@ struct LiveLogView: View {
             String(localized: "liveLog.status.failed", bundle: .module)
         case .queued, .interrupted:
             String(localized: "liveLog.status.queued", bundle: .module)
+        // requiresAction segue em Ativas; reusa o rótulo "queued" até ter string própria.
+        case .requiresAction:
+            String(localized: "liveLog.status.queued", bundle: .module)
         }
     }
 

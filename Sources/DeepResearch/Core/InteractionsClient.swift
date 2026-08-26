@@ -45,6 +45,16 @@ extension InteractionsClientProtocol {
     }
 }
 
+/// Modelo descoberto via GET /v1beta/models — só o id e o nome de exibição interessam.
+struct ModelInfo: Equatable {
+    let id: String
+    let displayName: String
+
+    /// A API Interactions só aceita agentes deep-research*; os demais modelos da
+    /// lista são exibidos na UI como referência, com badge próprio.
+    var isDeepResearch: Bool { id.contains("deep-research") }
+}
+
 struct URLSessionInteractionsClient: InteractionsClientProtocol {
     private let session: URLSession
     private let apiKeyProvider: () throws -> String
@@ -85,6 +95,41 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
 
     func cancel(id: String) async throws -> Interaction {
         try await perform(requestForInteraction(id: id, action: "cancel"))
+    }
+
+    /// GET /v1beta/models — descobre os modelos disponíveis para a key atual.
+    /// A resposta é `{"models": [{"name": "models/<id>", "displayName": ...}]}`;
+    /// o prefixo "models/" é removido porque a API Interactions espera só o id.
+    func listModels() async throws -> [ModelInfo] {
+        var request = URLRequest(url: Self.baseURL.appendingPathComponent("models"))
+        request.httpMethod = "GET"
+        request.setValue(try apiKeyProvider(), forHTTPHeaderField: "x-goog-api-key")
+
+        let (data, response) = try await session.data(for: request)
+        let httpResponse = try Self.httpResponse(from: response)
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw Self.clientError(statusCode: httpResponse.statusCode, body: data, interactionURLPath: nil)
+        }
+
+        struct ModelsResponse: Decodable {
+            struct Entry: Decodable {
+                let name: String
+                let displayName: String?
+            }
+            let models: [Entry]
+        }
+
+        do {
+            let decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
+            return decoded.models.map { entry in
+                ModelInfo(
+                    id: entry.name.hasPrefix("models/") ? String(entry.name.dropFirst("models/".count)) : entry.name,
+                    displayName: entry.displayName ?? entry.name
+                )
+            }
+        } catch {
+            throw ClientError.http(httpResponse.statusCode, message: "resposta de /models ilegível")
+        }
     }
 
     func createStream(question: String, agent: AgentKind, context: String? = nil, previousInteractionID: String? = nil) async throws -> AsyncStream<SSEEvent> {

@@ -18,6 +18,47 @@ enum AppPreferences {
     static let modelMax = "modelMaxIdentifier"
     static let defaultModelMax = "deep-research-max-preview-04-2026"
 
+    // MARK: - Descoberta de modelos (cache híbrido)
+
+    /// JSON `[String]` com os ids descobertos via /models.
+    static let modelsCache = "modelsCache"
+
+    /// Timestamp (Double) da última descoberta bem-sucedida.
+    static let modelsCacheDate = "modelsCacheDate"
+
+    /// Cache é considerado velho após 24 h.
+    private static let cacheStaleInterval: TimeInterval = 24 * 60 * 60
+
+    /// Fallback quando não há cache nem rede — subgrupo deep-research conhecido.
+    static let fallbackModels = [
+        "deep-research-preview-04-2026",
+        "deep-research-max-preview-04-2026",
+        "deep-research-pro-preview-12-2025",
+    ]
+
+    /// Ids em cache; nil se ausente ou ilegível.
+    static func cachedModels() -> [String]? {
+        guard let data = UserDefaults.standard.data(forKey: modelsCache),
+              let ids = try? JSONDecoder().decode([String].self, from: data),
+              !ids.isEmpty
+        else { return nil }
+        return ids
+    }
+
+    /// Grava o cache de ids e renova o timestamp.
+    static func saveCachedModels(_ ids: [String]) {
+        guard let data = try? JSONEncoder().encode(ids) else { return }
+        UserDefaults.standard.set(data, forKey: modelsCache)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: modelsCacheDate)
+    }
+
+    /// true quando nunca buscou ou o cache passou de 24 h.
+    static func isCacheStale() -> Bool {
+        let date = UserDefaults.standard.object(forKey: modelsCacheDate) as? Double
+        guard let timestamp = date else { return true }
+        return Date().timeIntervalSince1970 - timestamp > cacheStaleInterval
+    }
+
     /// Caminho da pasta padrão de contexto (vazia = nenhuma).
     static let defaultContextFolderPath = "defaultContextFolderPath"
 
