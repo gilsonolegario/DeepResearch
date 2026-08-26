@@ -243,7 +243,9 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         let formatInstruction = """
         Responda SEMPRE em Markdown estruturado: use ## cabeçalhos para seções, \
         - listas para itens, **negrito** para ênfase, tabelas | assim | para dados \
-        tabulares e `código` para termos técnicos.
+        tabulares e `código` para termos técnicos. Ao final, liste as fontes como \
+        referências acadêmicas numeradas no formato \
+        [N] Título — Veículo/Publicante (ano). URL — nunca apenas o link cru.
 
         """
         guard let context, !context.isEmpty else { return formatInstruction + question }

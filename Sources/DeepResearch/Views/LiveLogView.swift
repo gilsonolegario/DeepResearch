@@ -36,14 +36,30 @@ struct LiveLogView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 6) {
-                            /// Steps with file context always appear last; others keep their relative order.
-            let contextEntries = session.stepLog.filter { $0.type == "user_input" && $0.text.hasPrefix("[Contexto de arquivos locais]") }
-            let otherEntries = session.stepLog.filter { !($0.type == "user_input" && $0.text.hasPrefix("[Contexto de arquivos locais]")) }
-            ForEach(Array(otherEntries.enumerated()), id: \.offset) { index, entry in
+                            // user_input chega como input montado pelo buildInput
+                            // (instrução de formato + contexto + pergunta). Exibimos
+                            // só o que interessa: pergunta como linha normal no topo,
+                            // contexto de pasta como DisclosureGroup no FIM do log.
+                            let displayEntries: [StepEntry] = session.stepLog.flatMap { entry -> [StepEntry] in
+                                guard entry.type == "user_input" else { return [entry] }
+                                let (question, context) = Self.splitUserInput(entry.text)
+                                var rows: [StepEntry] = []
+                                if let q = question {
+                                    rows.append(StepEntry(timestamp: entry.timestamp, type: "user_input", text: q))
+                                }
+                                if let c = context {
+                                    rows.append(StepEntry(timestamp: entry.timestamp, type: "folder_context", text: c))
+                                }
+                                if rows.isEmpty { rows.append(entry) }
+                                return rows
+                            }
+                            let contextEntries = displayEntries.filter { $0.type == "folder_context" }
+                            let otherEntries = displayEntries.filter { $0.type != "folder_context" }
+                            ForEach(Array(otherEntries.enumerated()), id: \.offset) { index, entry in
                                 StepRow(entry: entry, fontSize: fontSize)
                                     .id(index)
-            }
-            ForEach(Array(contextEntries.enumerated()), id: \.offset) { index, entry in
+                            }
+                            ForEach(Array(contextEntries.enumerated()), id: \.offset) { index, entry in
                                 StepRow(entry: entry, fontSize: fontSize)
                                     .id(index + otherEntries.count)
                             }
@@ -129,6 +145,44 @@ struct LiveLogView: View {
         case .queued, .interrupted:
             String(localized: "liveLog.status.queued", bundle: .module)
         }
+    }
+
+    // MARK: - Split do input montado
+
+    /// Marcadores gerados por `InteractionsClient.buildInput` — fonte única
+    /// da verdade do formato do input enviado à API.
+    private static let contextStartMarker = "[Contexto de arquivos locais]"
+    private static let contextEndMarker = "[/Contexto]"
+    private static let questionMarker = "Pergunta do usuário: "
+    private static let formatInstructionStart = "Responda SEMPRE em Markdown estruturado"
+    private static let formatInstructionEnd = "para termos técnicos."
+
+    /// Separa o input montado em (pergunta, contexto). A instrução de formato
+    /// é ruído interno do app e some da exibição.
+    static func splitUserInput(_ text: String) -> (question: String?, context: String?) {
+        var body = text[...]
+        var context: String? = nil
+
+        if let start = body.range(of: contextStartMarker),
+           let end = body.range(of: contextEndMarker) {
+            context = String(body[start.upperBound..<end.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            body = body[end.upperBound...]
+        }
+
+        if let marker = body.range(of: questionMarker) {
+            let question = String(body[marker.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return (question.isEmpty ? nil : question, context)
+        }
+
+        // Sem marcador de pergunta (pesquisa sem pasta): tira a instrução do início.
+        if let instrStart = body.range(of: formatInstructionStart),
+           let instrEnd = body.range(of: formatInstructionEnd) {
+            body = body[instrEnd.upperBound...]
+        }
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed.isEmpty ? nil : trimmed, context)
     }
 
     // MARK: - Loading Animation
@@ -379,8 +433,8 @@ private struct StepRow: View {
     @ViewBuilder private var stepContent: some View {
         if entry.type == "model_output" {
             MarkdownBlocksView(text: entry.text, fontSize: fontSize)
-        } else if entry.type == "user_input" && entry.text.hasPrefix("[Contexto de arquivos locais]") {
-            DisclosureGroup("Pergunta + contexto de pasta (\(entry.text.count) caracteres)") {
+        } else if entry.type == "folder_context" {
+            DisclosureGroup("Contexto da pasta (\(entry.text.count) caracteres)") {
                 ScrollView {
                     Text(entry.text)
                         .font(.system(size: 12, design: .monospaced))
@@ -393,8 +447,10 @@ private struct StepRow: View {
             }
             .font(.callout)
         } else {
+            // user_input e demais entradas de texto: mesmo tamanho do corpo
+            // markdown (escala junto com os pills A−/A+), não .callout pequeno.
             Text(entry.text)
-                .font(.callout)
+                .font(.system(size: fontSize))
                 .textSelection(.enabled)
         }
     }
@@ -408,6 +464,7 @@ private struct StepRow: View {
         case "google_search": "magnifyingglass"
         case "google_search_result": "doc.text.magnifyingglass"
         case "user_input": "arrow.up.circle"
+        case "folder_context": "folder"
         default: "ellipsis.circle"
         }
     }
