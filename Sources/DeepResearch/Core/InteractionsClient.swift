@@ -234,25 +234,25 @@ struct URLSessionInteractionsClient: InteractionsClientProtocol {
         AppPreferences.modelIdentifier(for: agent)
     }
 
-    /// Concatena contexto da pasta + instrução de formato + pergunta no `input`.
-    /// (a API não suporta systemInstruction — a instrução vai no próprio input)
+    /// Concatenates folder context + format instruction + question into `input`.
+    /// (the API doesn't support systemInstruction — the instruction goes in the input itself)
     private static func buildInput(question: String, context: String?) -> String {
         let formatInstruction = """
-        Responda SEMPRE em Markdown estruturado: use ## cabeçalhos para seções, \
-        - listas para itens, **negrito** para ênfase, tabelas | assim | para dados \
-        tabulares e `código` para termos técnicos. Ao final, liste as fontes como \
-        referências acadêmicas numeradas no formato \
-        [N] Título — Veículo/Publicante (ano). URL — nunca apenas o link cru.
+        Always respond in structured Markdown: use ## headings for sections, \
+        - lists for items, **bold** for emphasis, | tables | for tabular data \
+        and `code` for technical terms. At the end, list sources as numbered \
+        academic references in the format \
+        [N] Title — Publisher/Venue (year). URL — never just the raw link.
 
         """
         guard let context, !context.isEmpty else { return formatInstruction + question }
         return """
         \(formatInstruction)
-        [Contexto de arquivos locais]
+        [Local file context]
         \(context)
-        [/Contexto]
+        [/Local file context]
 
-        Pergunta do usuário: \(question)
+        User question: \(question)
         """
     }
 }

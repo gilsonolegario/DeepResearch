@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Preferências do app (⌘,): API key no Keychain, agente/modelos, fonte e pasta padrão.
-/// Espelho do escopo "Completo" escolhido no brainstorming.
+/// App preferences (⌘,): API key in Keychain, agent/models, font and default folder.
+/// Mirrors the "Complete" scope chosen in brainstorming.
 struct PreferencesView: View {
     // MARK: - API key (Keychain)
 
@@ -12,34 +12,35 @@ struct PreferencesView: View {
 
     private var keyStore: APIKeyStore { APIKeyStore() }
 
-    // MARK: - Pesquisa padrão
+    // MARK: - Default research
 
     @AppStorage(AppPreferences.agentKind) private var agentKindRaw: String = AgentKind.regular.rawValue
 
     @AppStorage(AppPreferences.modelRegular) private var modelRegular: String = AppPreferences.defaultModelRegular
     @AppStorage(AppPreferences.modelMax) private var modelMax: String = AppPreferences.defaultModelMax
 
-    // MARK: - Aparência
+    // MARK: - Appearance
 
     @AppStorage(AppPreferences.logFontSize) private var logFontSize: Double = 13
 
-    // MARK: - Contexto padrão
+    // MARK: - Default context
 
     @AppStorage(AppPreferences.defaultContextFolderPath) private var defaultContextFolderPath: String = ""
 
     var body: some View {
         Form {
             apiKeySection
-            pesquisaSection
-            aparenciaSection
-            contextoSection
+            researchSection
+            appearanceSection
+            contextSection
         }
         .formStyle(.grouped)
-        .frame(minWidth: 520, minHeight: 520)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollContentBackground(.hidden)
         .onAppear { refreshKeyStatus() }
     }
 
-    // MARK: - Seções
+    // MARK: - Sections
 
     private var apiKeySection: some View {
         Section {
@@ -61,15 +62,15 @@ struct PreferencesView: View {
                         Image(systemName: showingKey ? "eye.slash" : "eye")
                     }
                     .buttonStyle(.bordered)
-                    .help(showingKey ? "Ocultar" : "Mostrar")
+                    .help(showingKey ? "Hide" : "Show")
                 }
 
                 HStack(spacing: 8) {
-                    Button("Salvar no Keychain") { saveKey() }
+                    Button("Save to Keychain") { saveKey() }
                         .buttonStyle(.borderedProminent)
                         .disabled(apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    Button("Remover do Keychain") { removeKey() }
+                    Button("Remove from Keychain") { removeKey() }
                         .disabled(!keyStore.hasKeyInKeychain())
 
                     Spacer()
@@ -82,7 +83,7 @@ struct PreferencesView: View {
                         .textSelection(.enabled)
                 }
 
-                Text("Prioridade: Keychain → `~/.local/share/opencode/auth.json` (compatibilidade). A key nunca aparece em logs.")
+                Text("Priority: Keychain → `~/.local/share/opencode/auth.json` (compatibility). The key never appears in logs.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -90,70 +91,70 @@ struct PreferencesView: View {
             Label("API Key — Google Generative Language", systemImage: "key.fill")
         } footer: {
             if let source = keyStore.resolvedSource() {
-                Text("Origem atual: \(source.rawValue).")
+                Text("Current source: \(source.rawValue).")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Nenhuma key configurada — pesquisas falharão até salvar uma key ou prover o auth.json.")
+                Text("No key configured — research will fail until you save a key or provide auth.json.")
                     .font(.caption2)
                     .foregroundStyle(.red)
             }
         }
     }
 
-    private var pesquisaSection: some View {
+    private var researchSection: some View {
         Section {
-            Picker("Agente padrão", selection: Binding(
+            Picker("Default agent", selection: Binding(
                 get: { AgentKind(rawValue: agentKindRaw) ?? .regular },
                 set: { agentKindRaw = $0.rawValue }
             )) {
-                Text("Padrão").tag(AgentKind.regular)
-                Text("Max — mais minucioso").tag(AgentKind.max)
+                Text("Regular").tag(AgentKind.regular)
+                Text("Max — more thorough").tag(AgentKind.max)
             }
             .pickerStyle(.radioGroup)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Modelo — Padrão")
+                Text("Model — Regular")
                     .font(.caption.bold())
                 HStack(spacing: 8) {
                     TextField(AppPreferences.defaultModelRegular, text: $modelRegular)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(.callout, design: .monospaced))
-                    Button("Restaurar") { modelRegular = AppPreferences.defaultModelRegular }
+                    Button("Restore") { modelRegular = AppPreferences.defaultModelRegular }
                         .disabled(modelRegular == AppPreferences.defaultModelRegular)
                 }
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Modelo — Max")
+                Text("Model — Max")
                     .font(.caption.bold())
                 HStack(spacing: 8) {
                     TextField(AppPreferences.defaultModelMax, text: $modelMax)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(.callout, design: .monospaced))
-                    Button("Restaurar") { modelMax = AppPreferences.defaultModelMax }
+                    Button("Restore") { modelMax = AppPreferences.defaultModelMax }
                         .disabled(modelMax == AppPreferences.defaultModelMax)
                 }
             }
 
-            Button("Restaurar ambos aos padrões") {
+            Button("Restore both to defaults") {
                 modelRegular = AppPreferences.defaultModelRegular
                 modelMax = AppPreferences.defaultModelMax
             }
             .disabled(modelRegular == AppPreferences.defaultModelRegular && modelMax == AppPreferences.defaultModelMax)
         } header: {
-            Label("Pesquisa", systemImage: "magnifyingglass")
+            Label("Research", systemImage: "magnifyingglass")
         } footer: {
-            Text("Vazio restaura o padrão. Identificadores são enviados como `agent` à Interactions API.")
+            Text("Empty restores the default. Identifiers are sent as `agent` to the Interactions API.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
     }
 
-    private var aparenciaSection: some View {
+    private var appearanceSection: some View {
         Section {
             HStack {
-                Text("Tamanho do log")
+                Text("Log font size")
                 Spacer()
                 Button { logFontSize = max(logFontSize - 1, 10) } label: {
                     Image(systemName: "textformat.size.smaller")
@@ -169,17 +170,17 @@ struct PreferencesView: View {
             }
             Slider(value: $logFontSize, in: 10...32, step: 1)
         } header: {
-            Label("Aparência", systemImage: "textformat.size")
+            Label("Appearance", systemImage: "textformat.size")
         }
     }
 
-    private var contextoSection: some View {
+    private var contextSection: some View {
         Section {
             HStack(spacing: 8) {
                 Image(systemName: "folder")
                     .foregroundStyle(.secondary)
                 if defaultContextFolderPath.isEmpty {
-                    Text("Nenhuma — escolher a cada pesquisa")
+                    Text("None — choose per research")
                         .foregroundStyle(.tertiary)
                         .font(.callout)
                 } else {
@@ -194,24 +195,24 @@ struct PreferencesView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer()
-                Button("Escolher…") { pickDefaultFolder() }
+                Button("Choose…") { pickDefaultFolder() }
             }
 
             if !defaultContextFolderPath.isEmpty, !FileManager.default.fileExists(atPath: defaultContextFolderPath) {
-                Label("Pasta não encontrada neste Mac — será ignorada.", systemImage: "exclamationmark.triangle")
+                Label("Folder not found on this Mac — will be ignored.", systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
         } header: {
-            Label("Pasta de contexto padrão", systemImage: "folder.badge.plus")
+            Label("Default context folder", systemImage: "folder.badge.plus")
         } footer: {
-            Text("Pré-selecionada ao abrir Nova pesquisa; ainda pode trocar ou remover por pesquisa.")
+            Text("Pre-selected when opening New Research; you can still change or clear it per research.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
     }
 
-    // MARK: - Ações
+    // MARK: - Actions
 
     private func saveKey() {
         let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -219,10 +220,10 @@ struct PreferencesView: View {
         if keyStore.saveToKeychain(trimmed) {
             apiKeyInput = ""
             showingKey = false
-            keyStatus = "Salva no Keychain."
+            keyStatus = "Saved to Keychain."
             keyIsError = false
         } else {
-            keyStatus = "Falha ao salvar no Keychain."
+            keyStatus = "Failed to save to Keychain."
             keyIsError = true
         }
         refreshKeyStatus(silent: true)
@@ -230,16 +231,15 @@ struct PreferencesView: View {
 
     private func removeKey() {
         keyStore.deleteFromKeychain()
-        keyStatus = "Removida do Keychain."
+        keyStatus = "Removed from Keychain."
         keyIsError = false
         refreshKeyStatus(silent: true)
     }
 
     private func refreshKeyStatus(silent: Bool = false) {
-        // Não sobrescreve mensagem de sucesso/erro recém-definida quando silent.
         if silent { return }
         if let source = keyStore.resolvedSource() {
-            keyStatus = "Key presente (\(source.rawValue))."
+            keyStatus = "Key present (\(source.rawValue))."
             keyIsError = false
         } else {
             keyStatus = ""

@@ -121,7 +121,7 @@ struct LiveLogView: View {
                         ToolbarItem(placement: .cancellationAction) {
                             // Fechar explícito pedido pelo usuário (Esc também fecha).
                             Button { showReport = false } label: {
-                                Label("Fechar", systemImage: "xmark.circle.fill")
+                                Label("Close", systemImage: "xmark.circle.fill")
                             }
                         }
                         ToolbarItem(placement: .confirmationAction) {
@@ -147,24 +147,32 @@ struct LiveLogView: View {
         }
     }
 
-    // MARK: - Split do input montado
+    // MARK: - Assembled input split
+    private static let contextStartMarker = "[Local file context]"
+    private static let contextEndMarker = "[/Local file context]"
+    private static let legacyContextStartMarker = "[Contexto de arquivos locais]"
+    private static let legacyContextEndMarker = "[/Contexto]"
+    private static let questionMarker = "User question: "
+    private static let legacyQuestionMarker = "Pergunta do usuário: "
+    private static let formatInstructionStart = "Always respond in structured Markdown"
+    private static let legacyFormatInstructionStart = "Responda SEMPRE em Markdown estruturado"
+    private static let formatInstructionEnd = "never just the raw link."
+    private static let legacyFormatInstructionEnd = "nunca apenas o link cru."
 
-    /// Marcadores gerados por `InteractionsClient.buildInput` — fonte única
-    /// da verdade do formato do input enviado à API.
-    private static let contextStartMarker = "[Contexto de arquivos locais]"
-    private static let contextEndMarker = "[/Contexto]"
-    private static let questionMarker = "Pergunta do usuário: "
-    private static let formatInstructionStart = "Responda SEMPRE em Markdown estruturado"
-    private static let formatInstructionEnd = "para termos técnicos."
-
-    /// Separa o input montado em (pergunta, contexto). A instrução de formato
-    /// é ruído interno do app e some da exibição.
+    /// Splits the assembled input into (question, context). The format
+    /// instruction is internal noise and is hidden from display.
+    /// Handles both current English markers and legacy Portuguese ones.
     static func splitUserInput(_ text: String) -> (question: String?, context: String?) {
         var body = text[...]
         var context: String? = nil
 
         if let start = body.range(of: contextStartMarker),
            let end = body.range(of: contextEndMarker) {
+            context = String(body[start.upperBound..<end.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            body = body[end.upperBound...]
+        } else if let start = body.range(of: legacyContextStartMarker),
+                  let end = body.range(of: legacyContextEndMarker) {
             context = String(body[start.upperBound..<end.lowerBound])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             body = body[end.upperBound...]
@@ -175,11 +183,22 @@ struct LiveLogView: View {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return (question.isEmpty ? nil : question, context)
         }
+        if let marker = body.range(of: legacyQuestionMarker) {
+            let question = String(body[marker.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return (question.isEmpty ? nil : question, context)
+        }
 
-        // Sem marcador de pergunta (pesquisa sem pasta): tira a instrução do início.
-        if let instrStart = body.range(of: formatInstructionStart),
-           let instrEnd = body.range(of: formatInstructionEnd) {
-            body = body[instrEnd.upperBound...]
+        // No folder marker (research without folder): strip the instruction prefix.
+        if let s = body.range(of: formatInstructionStart),
+           let e = body.range(of: formatInstructionEnd) {
+            body = body[e.upperBound...]
+        } else if let s = body.range(of: legacyFormatInstructionStart),
+                  let e = body.range(of: legacyFormatInstructionEnd) {
+            body = body[e.upperBound...]
+        } else if let s = body.range(of: legacyFormatInstructionStart),
+                  let e = body.range(of: formatInstructionEnd) {
+            body = body[e.upperBound...]
         }
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         return (trimmed.isEmpty ? nil : trimmed, context)
@@ -434,7 +453,7 @@ private struct StepRow: View {
         if entry.type == "model_output" {
             MarkdownBlocksView(text: entry.text, fontSize: fontSize)
         } else if entry.type == "folder_context" {
-            DisclosureGroup("Contexto da pasta (\(entry.text.count) caracteres)") {
+            DisclosureGroup("Folder context (\(entry.text.count) characters)") {
                 ScrollView {
                     Text(entry.text)
                         .font(.system(size: 12, design: .monospaced))

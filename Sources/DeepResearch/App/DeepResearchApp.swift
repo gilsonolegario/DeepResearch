@@ -16,7 +16,7 @@ struct DeepResearchApp: App {
         } catch {
             // Sem store persistente o app perde o propósito (regra: nenhuma falha descarta
             // estado) — melhor falhar alto aqui do que rodar escrevendo em memória volátil.
-            fatalError("Não foi possível abrir o banco SwiftData: \(error)")
+            fatalError("Failed to open SwiftData store: \(error)")
         }
         let keyStore = APIKeyStore()
         coordinator = ResearchCoordinator(
@@ -45,7 +45,12 @@ struct DeepResearchApp: App {
         .defaultSize(width: 960, height: 640)
 
         Settings {
-            PreferencesView()
+            ScrollView {
+                PreferencesView()
+            }
+            .frame(minWidth: 520, idealWidth: 560, minHeight: 520, idealHeight: 620)
         }
+        .windowResizability(.automatic)
+        .defaultSize(width: 560, height: 620)
     }
 }

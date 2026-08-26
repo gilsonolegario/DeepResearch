@@ -26,6 +26,10 @@ final class ResearchCoordinator {
     /// Intervalo de polling (20 s conforme contrato).
     private let pollInterval: Duration
 
+    /// Sem progresso por este tempo → marca como falha (evita loop infinito).
+    /// Deep-research normal completa em ~9m; 15m só com `user_input` é fila travada.
+    private let stallTimeout: Duration
+
     /// Modo de transporte ativo por sessão (exposta para UI observável).
     private(set) var transportModes: [PersistentIdentifier: TransportMode] = [:]
 
@@ -43,11 +47,13 @@ final class ResearchCoordinator {
     init(
         client: any InteractionsClientProtocol,
         modelContext: ModelContext,
-        pollInterval: Duration = .seconds(20)
+        pollInterval: Duration = .seconds(20),
+        stallTimeout: Duration = .seconds(900)
     ) {
         self.client = client
         self.modelContext = modelContext
         self.pollInterval = pollInterval
+        self.stallTimeout = stallTimeout
     }
 
     // MARK: - Ciclo de vida
@@ -206,6 +212,19 @@ final class ResearchCoordinator {
             }
 
             guard !Task.isCancelled else { break }
+
+            // Watchdog: sem step novo além de `user_input` por stallTimeout → falha.
+            // Evita ficar para sempre em `researching` quando a fila do servidor trava.
+            if let session = modelContext.model(for: sessionID) as? ResearchSession,
+               stallTimeout != .seconds(0),
+               hasStalled(session: session)
+            {
+                session.status = .failed
+                session.finishedAt = .now
+                try? modelContext.save()
+                break
+            }
+
             do {
                 let interaction = try await client.get(id: interactionID)
                 guard let session = modelContext.model(for: sessionID) as? ResearchSession else { break }
@@ -454,6 +473,18 @@ final class ResearchCoordinator {
         default:
             ""
         }
+    }
+
+    // MARK: - Stall detection
+
+    /// Travou se: rodando há >= stallTimeout E só tem `user_input` no log
+    /// (nenhum `thought`/`google_search` produzido pelo servidor).
+    private func hasStalled(session: ResearchSession) -> Bool {
+        guard session.status == .running else { return false }
+        let elapsed = Date.now.timeIntervalSince(session.startedAt)
+        guard elapsed >= Double(stallTimeout.components.seconds) else { return false }
+        // Se já produziu qualquer step além do user_input, não é stall.
+        return session.stepLog.allSatisfy { $0.type == "user_input" }
     }
 
     // MARK: - Query SwiftData
