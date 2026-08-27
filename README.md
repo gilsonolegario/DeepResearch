@@ -1,3 +1,5 @@
+<img src="screenshots/icone.png" alt="App icon" width="128">
+
 # DeepResearch
 
 A native macOS app for deep, source-backed research powered by Google's Gemini Deep Research Interactions API. Ask a question, and DeepResearch runs a full investigation — planning, searching, synthesizing — with live streaming progress and a final report you can copy or export.
@@ -7,6 +9,8 @@ A native macOS app for deep, source-backed research powered by Google's Gemini D
 ![arch](https://img.shields.io/badge/arch-arm64-blueviolet?style=flat)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat)
 ![Version](https://img.shields.io/badge/version-1.0.0-FF9F1C?style=flat)
+
+[![DeepResearch — New Research](screenshots/main.png)](screenshots/main.png)
 
 ## Download
 
